@@ -1,0 +1,181 @@
+﻿@page "/Admin"
+@using Microsoft.AspNetCore.Authorization
+@using Tasker.Web.Data.Entities
+@using Tasker.Web.Data.Services
+@inject TasksService TasksService
+@attribute [Authorize]
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudPaper Elevation="4" Class="p-4">
+        <MudGrid>
+            <MudItem xs="12">
+                <MudText Typo="Typo.h4" GutterBottom="true">Správa předmětů, skupin a druhů zadání</MudText>
+            </MudItem>
+
+            <!-- Tabulka Předměty s editací -->
+            <MudItem xs="12">
+                <MudText Typo="Typo.h5" GutterBottom="true">Předměty</MudText>
+                <MudTable Items="Subjects" Hover="true" Bordered="true">
+                    <HeaderContent>
+                        <MudTh>Předmět</MudTh>
+                        <MudTh>Skupina</MudTh>
+                        <MudTh>Akce</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Předmět">
+                            <MudTextField @bind-Value="context.Name" Immediate="true" Variant="Variant.Outlined" />
+                        </MudTd>
+                        <MudTd DataLabel="Skupina">
+                            <MudSelect T="Guid" Label="Skupina" Variant="Variant.Outlined" @bind-Value="context.GroupId" OnValueChanged="async id => await OnGroupChanged(id, context.Id)">
+                                @foreach (var group in Groups)
+                                {
+                                    <MudSelectItem Value="@group.Id">@group.Name</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudTd>
+                        <MudTd DataLabel="Akce">
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="() => SaveSubject(context)">
+                                <MudIcon Icon="@Icons.Material.Filled.Save" /> Uložit
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="() => DeleteSubject(context.Id)">
+                                <MudIcon Icon="@Icons.Material.Filled.Delete" /> Smazat
+                            </MudButton>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddSubject">
+                    <MudIcon Icon="@Icons.Material.Filled.Add" /> Přidat předmět
+                </MudButton>
+            </MudItem>
+
+            <!-- Tabulka Skupiny s editací -->
+            <MudItem xs="12">
+                <MudText Typo="Typo.h5" GutterBottom="true">Skupiny</MudText>
+                <MudTable Items="Groups" Hover="true" Bordered="true">
+                    <HeaderContent>
+                        <MudTh>Skupina</MudTh>
+                        <MudTh>Akce</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Skupina">
+                            <MudTextField @bind-Value="context.Name" Immediate="true" Variant="Variant.Outlined" />
+                        </MudTd>
+                        <MudTd DataLabel="Akce">
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="() => SaveGroup(context)">
+                                <MudIcon Icon="@Icons.Material.Filled.Save" /> Uložit
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="() => DeleteGroup(context.Id)">
+                                <MudIcon Icon="@Icons.Material.Filled.Delete" /> Smazat
+                            </MudButton>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddGroup">
+                    <MudIcon Icon="@Icons.Material.Filled.Add" /> Přidat skupinu
+                </MudButton>
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudText Typo="Typo.h5" GutterBottom="true">Druhy zadání</MudText>
+                <MudTable Items="AssignmentTypes" Hover="true" Bordered="true">
+                    <HeaderContent>
+                        <MudTh>Druh zadání</MudTh>
+                        <MudTh>Akce</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Druh zadání">
+                            <MudTextField @bind-Value="context.Name" Immediate="true" Variant="Variant.Outlined" />
+                        </MudTd>
+                        <MudTd DataLabel="Akce">
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="() => SaveAssignmentType(context)">
+                                <MudIcon Icon="@Icons.Material.Filled.Save" /> Uložit
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="() => DeleteAssignmentType(context.Id)">
+                                <MudIcon Icon="@Icons.Material.Filled.Delete" /> Smazat
+                            </MudButton>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddAssignmentType">
+                    <MudIcon Icon="@Icons.Material.Filled.Add" /> Přidat druh zadání
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private IEnumerable<Subject> Subjects { get; set; } = [];
+    private IEnumerable<Group> Groups { get; set; } = [];
+    private IEnumerable<TaskType> AssignmentTypes { get; set; } = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        Subjects = await TasksService.GetSubjectsAsync();
+        Groups = await TasksService.GetGroupsAsync();
+        AssignmentTypes = await TasksService.GetAssignmentTypesAsync();
+    }
+
+    private async Task AddSubject()
+    {
+        await TasksService.AddSubjectAsync();
+        Subjects = await TasksService.GetSubjectsAsync();
+    }
+
+    private async Task SaveSubject(Subject subject)
+    {
+        await TasksService.UpdateSubjectAsync(subject);
+        Subjects = await TasksService.GetSubjectsAsync();
+    }
+
+    private async Task DeleteSubject(Guid id)
+    {
+        await TasksService.DeleteSubjectAsync(id);
+        Subjects = await TasksService.GetSubjectsAsync();
+    }
+
+    private async Task AddGroup()
+    {
+        await TasksService.AddGroupAsync();
+        Groups = await TasksService.GetGroupsAsync();
+    }
+
+    private async Task SaveGroup(Group group)
+    {
+        await TasksService.UpdateGroupAsync(group);
+        Groups = await TasksService.GetGroupsAsync();
+    }
+
+    private async Task DeleteGroup(Guid id)
+    {
+        await TasksService.DeleteGroupAsync(id);
+        Groups = await TasksService.GetGroupsAsync();
+    }
+
+    private async Task AddAssignmentType()
+    {
+        await TasksService.AddAssignmentTypeAsync();
+        AssignmentTypes = await TasksService.GetAssignmentTypesAsync();
+    }
+
+    private async Task SaveAssignmentType(TaskType assignmentType)
+    {
+        await TasksService.UpdateAssignmentTypeAsync(assignmentType);
+        AssignmentTypes = await TasksService.GetAssignmentTypesAsync();
+    }
+
+    private async Task DeleteAssignmentType(Guid id)
+    {
+        await TasksService.DeleteAssignmentTypeAsync(id);
+        AssignmentTypes = await TasksService.GetAssignmentTypesAsync();
+    }
+
+    private async Task OnGroupChanged(Guid? newGroupId, Guid subjectId)
+    {
+        var subject = Subjects.First(s => s.Id == subjectId);
+        subject.GroupId = newGroupId ?? Guid.Empty;
+
+        await TasksService.UpdateSubjectAsync(subject);
+        Subjects = await TasksService.GetSubjectsAsync();
+    }
+}

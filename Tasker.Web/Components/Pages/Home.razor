@@ -1,0 +1,66 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Authorization
+@using Tasker.Web.Data.Entities
+@using Tasker.Web.Data.Services
+@inject TasksService TasksService
+@inject AuthenticationStateProvider _authenticationStateProvider
+@rendermode InteractiveServer
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudPaper Elevation="4" Class="p-4">
+        <MudGrid>
+            <MudItem xs="12">
+                <MudText Typo="Typo.h4" GutterBottom="true">Úkoly a testy</MudText>
+            </MudItem>
+            <MudItem xs="12" Class="text-end">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/Add">
+                    <MudIcon Icon="@Icons.Material.Filled.Add" Class="me-2" /> Přidat zadání
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+
+        <MudTable Items="SchoolTasks" Hover="true" Bordered="true">
+            <HeaderContent>
+                <MudTh>Předmět</MudTh>
+                <MudTh>Typ</MudTh>
+                <MudTh>Zadání</MudTh>
+                <MudTh>Čas splnění</MudTh>
+                <MudTh>Akce</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Předmět">@(context.Subject.GroupId == Guid.Empty ? context.Subject.Name : context.Subject.Name + context.Subject.Group.Name)</MudTd>
+                <MudTd>
+                    <MudChip T="string" Color="Color.Primary"
+                             Variant="Variant.Filled"
+                             Label="true" Text="@context.TaskType.Name" />
+                </MudTd>
+                <MudTd DataLabel="Zadání">@context.Description</MudTd>
+                <MudTd DataLabel="Čas splnění">@(context.LocalDeadline.ToString("dd.MM.yyyy"))</MudTd>
+                <MudTd DataLabel="Akce">
+                    <MudButton Disabled="!IsLogin" Variant="Variant.Outlined" Color="Color.Error" OnClick="() => RemoveTask(context.Id)">
+                        <MudIcon Icon="@Icons.Material.Filled.Delete" />
+                    </MudButton>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private IEnumerable<SchoolTask> SchoolTasks { get; set; } = [];
+    private bool IsLogin { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SchoolTasks = await TasksService.GetSchoolTasksAsync();
+        var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
+        IsLogin = authState.User.Identity?.IsAuthenticated ?? false;
+    }
+
+    [Authorize]
+    private async Task RemoveTask(Guid id)
+    {
+        await TasksService.DeleteTaskAsync(id);
+        SchoolTasks = await TasksService.GetSchoolTasksAsync();
+    }
+}

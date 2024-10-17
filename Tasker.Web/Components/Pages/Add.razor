@@ -1,0 +1,91 @@
+﻿@page "/Add"
+@using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
+@using Tasker.Web.Data.Entities
+@using Tasker.Web.Data.Services
+@inject TasksService TasksService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider _authenticationStateProvider
+@rendermode InteractiveServer
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudPaper Elevation="4" Class="p-4">
+        <MudText Typo="Typo.h4" GutterBottom="true">Přidat nové zadání</MudText>
+        <EditForm Model="inputModel" OnValidSubmit="SubmitAssignment">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <MudTextField Variant="Variant.Outlined" @bind-Value="inputModel.Name" Label="Název zadání" Required="true" />
+            <MudTextField Variant="Variant.Outlined" @bind-Value="inputModel.Description" Label="Obsah zadání" Required="true" />
+            <MudDatePicker Variant="Variant.Outlined" @bind-Date="inputModel.Deadline" Label="Termín" Required="true" />
+            <MudSelect Clearable Variant="Variant.Outlined" T="string" @bind-Value="inputModel.TaskTypeId" Label="Vyberte typ" Required="true">
+                @foreach (var subject in types)
+                {
+                    <MudSelectItem Value="@subject.Id.ToString()">@(subject.Name)</MudSelectItem>
+                }
+            </MudSelect>
+            <MudSelect Variant="Variant.Outlined" T="string" @bind-Value="inputModel.SubjectId" Label="Vyberte předmět" Required="true">
+                @foreach (var subject in subjects)
+                {
+                    <MudSelectItem Value="@subject.Id.ToString()">@(subject.GroupId == Guid.Empty ? subject.Name : subject.Name + subject.Group.Name)</MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" ButtonType="ButtonType.Submit">
+                <MudIcon Icon="@Icons.Material.Filled.Save" /> Přidat zadání
+            </MudButton>
+        </EditForm>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private SchoolTask newAssignment = new();
+    private IEnumerable<Subject> subjects = new List<Subject>();
+    private IEnumerable<TaskType> types = new List<TaskType>();
+    private Guid UserId;
+    protected override async Task OnInitializedAsync()
+    {
+        subjects = await TasksService.GetSubjectsAsync();
+        types = await TasksService.GetAssignmentTypesAsync();
+        var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
+        if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId))
+        {
+            UserId = userId;
+        }
+    }
+
+    private async Task SubmitAssignment()
+    {
+        newAssignment.Name = inputModel.Name;
+        newAssignment.Description = inputModel.Description;
+        newAssignment.LocalDeadline = inputModel.Deadline.HasValue ? inputModel.Deadline.Value.ToUniversalTime() : DateTimeOffset.UtcNow;
+        newAssignment.SubjectId = Guid.Parse(inputModel.SubjectId);
+        newAssignment.TaskTypeId = Guid.Parse(inputModel.TaskTypeId);
+        await TasksService.AddTaskAsync(newAssignment);
+        NavigationManager.NavigateTo("/");
+    }
+
+    private InputModel inputModel = new InputModel();
+
+    public class InputModel
+    {
+        [Required]
+        public string Name { get; set; } = string.Empty;
+
+        [Required]
+        public string Description { get; set; } = string.Empty;
+
+        [Required]
+        public DateTime? Deadline { get; set; }
+
+        [Required]
+        public string SubjectId { get; set; } = string.Empty;
+
+        [Required]
+        public string TaskTypeId { get; set; } = string.Empty;
+
+    }
+}
