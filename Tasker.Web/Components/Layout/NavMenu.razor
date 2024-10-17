@@ -1,0 +1,77 @@
+﻿@implements IDisposable
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+
+@* <div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">Tasker</a>
+    </div>
+</div> *@
+
+<MudNavMenu>
+    <div class="" onclick="document.querySelector('.navbar-toggler').click()">
+
+        <nav class="flex-column">
+
+            <div class="nav-item px-3">
+                <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Domů</MudNavLink>
+            </div>
+
+
+            <AuthorizeView>
+                <Authorized>
+
+                    <div class="nav-item px-3">
+                        <MudNavLink Href="Account/Manage" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Person">@context.User.Identity?.Name</MudNavLink>
+                    </div>
+                    <div class="nav-item px-3">
+                        <MudNavLink Href="Admin" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Security">Admin</MudNavLink>
+                    </div>
+                    <div class="nav-item px-3">
+                        <form action="Account/Logout" method="post" id="logout">
+                            <AntiforgeryToken />
+                            <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+                            <MudNavLink OnClick="Logout" Icon="@Icons.Material.Filled.ArrowBack">Logout</MudNavLink>
+                        </form>
+                    </div>
+                </Authorized>
+                <NotAuthorized>
+                    <div class="nav-item px-3">
+                        <MudNavLink Href="Account/Login" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.LockPerson">Login</MudNavLink>
+                    </div>
+                </NotAuthorized>
+            </AuthorizeView>
+
+        </nav>
+    </div>
+</MudNavMenu>
+<script>
+    function submitLogoutForm() {
+        document.getElementById('logout').submit();
+    }
+</script>
+
+@code {
+    private string? currentUrl;
+    private async Task Logout(MouseEventArgs e)
+    {
+        await JS.InvokeVoidAsync("submitLogoutForm");
+    }
+    protected override void OnInitialized()
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+}
+
