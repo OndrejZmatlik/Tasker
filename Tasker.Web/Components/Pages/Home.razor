@@ -1,12 +1,14 @@
 ﻿@page "/"
+@using Humanizer
 @using Microsoft.AspNetCore.Authorization
+@using System.Globalization
 @using Tasker.Web.Data.Entities
 @using Tasker.Web.Data.Services
 @inject TasksService TasksService
 @inject AuthenticationStateProvider _authenticationStateProvider
 @rendermode InteractiveServer
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <MudPaper Elevation="4" Class="p-4">
         <MudGrid>
             <MudItem xs="12">
@@ -28,21 +30,38 @@
                 <MudTh>Akce</MudTh>
             </HeaderContent>
             <RowTemplate>
-                <MudTd DataLabel="Předmět">@(context.Subject.GroupId == Guid.Empty ? context.Subject.Name : context.Subject.Name + context.Subject.Group.Name)</MudTd>
-                <MudTd>
-                    <MudChip T="string" Color="Color.Primary"
-                             Variant="Variant.Filled"
-                             Label="true" Text="@context.TaskType.Name" />
+                <MudTd DataLabel="Předmět">
+                    @(context.Subject.GroupId == Guid.Empty ? context.Subject.Name : context.Subject.Name + " " + context.Subject.Group.Name)
+                    @if ((context.LocalDeadline - DateTime.Now).TotalDays <= 1)
+                    {
+                        <MudTooltip Text="Brzy">
+                            <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Error" Style="margin-left: 5px; vertical-align: middle;" />
+                        </MudTooltip>
+                    }
                 </MudTd>
-                <MudTd DataLabel="Zadání">@context.Description</MudTd>
-                <MudTd DataLabel="Čas splnění">@(context.LocalDeadline.ToString("dd.MM.yyyy"))</MudTd>
+                <MudTd>
+                    <MudChip T="string" Color="Color.Primary" Variant="Variant.Filled" Label="true" Text="@context.TaskType.Name" />
+                </MudTd>
+                <MudTd DataLabel="Zadání">
+                    @context.Description
+                    
+                </MudTd>
+                <MudTd DataLabel="Čas splnění">
+                    @(context.LocalDeadline.ToString("D", CultureInfo.GetCultureInfo("cs-CZ")))
+                    <code>
+                        <MudText Typo="Typo.caption">(@(context.LocalDeadline.Date.Humanize()))</MudText>
+                    </code>
+                </MudTd>
                 <MudTd DataLabel="Akce">
                     <MudButton Disabled="!IsLogin" Variant="Variant.Outlined" Color="Color.Error" OnClick="() => RemoveTask(context.Id)">
                         <MudIcon Icon="@Icons.Material.Filled.Delete" />
                     </MudButton>
                 </MudTd>
+
             </RowTemplate>
         </MudTable>
+
+
     </MudPaper>
 </MudContainer>
 
@@ -55,6 +74,7 @@
         SchoolTasks = await TasksService.GetSchoolTasksAsync();
         var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
         IsLogin = authState.User.Identity?.IsAuthenticated ?? false;
+        CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("cs-CZ");
     }
 
     [Authorize]
