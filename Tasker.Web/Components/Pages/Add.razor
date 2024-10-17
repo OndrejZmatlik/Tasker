@@ -1,4 +1,4 @@
-﻿@page "/Add"
+﻿@page "/Add/{Id?}"
 @using System.ComponentModel.DataAnnotations
 @using System.Security.Claims
 @using Tasker.Web.Data.Entities
@@ -43,6 +43,8 @@
     private IEnumerable<Subject> subjects = new List<Subject>();
     private IEnumerable<TaskType> types = new List<TaskType>();
     private Guid UserId;
+    [Parameter] public string? Id { get; set; }
+    private bool IsEdit => Id != null;
     protected override async Task OnInitializedAsync()
     {
         subjects = await TasksService.GetSubjectsAsync();
