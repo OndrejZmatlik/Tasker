@@ -117,13 +117,13 @@ namespace Tasker.Web.Migrations
                     b.Property<string>("LoginProvider")
                         .HasColumnType("text");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("ShortName")
                         .HasColumnType("text");
 
                     b.Property<string>("Value")
                         .HasColumnType("text");
 
-                    b.HasKey("UserId", "LoginProvider", "Name");
+                    b.HasKey("UserId", "LoginProvider", "ShortName");
 
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
@@ -138,7 +138,7 @@ namespace Tasker.Web.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("text");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("ShortName")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
@@ -226,7 +226,7 @@ namespace Tasker.Web.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("ShortName")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -251,7 +251,7 @@ namespace Tasker.Web.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("ShortName")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -284,7 +284,7 @@ namespace Tasker.Web.Migrations
                     b.Property<Guid?>("GroupId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("ShortName")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -301,7 +301,7 @@ namespace Tasker.Web.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("ShortName")
                         .IsRequired()
                         .HasColumnType("text");
 

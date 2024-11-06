@@ -23,7 +23,10 @@
                     </HeaderContent>
                     <RowTemplate>
                         <MudTd DataLabel="Předmět">
-                            <MudTextField @bind-Value="context.Name" Immediate="true" Variant="Variant.Outlined" />
+                            <MudTextField @bind-Value="context.ShortName" Immediate="true" Variant="Variant.Outlined" />
+                        </MudTd>
+                        <MudTd DataLabel="Předmět (Full)">
+                            <MudTextField @bind-Value="context.FullName" Immediate="true" Variant="Variant.Outlined" />
                         </MudTd>
                         <MudTd DataLabel="Skupina">
                             <MudSelect T="Guid" Label="Skupina" Variant="Variant.Outlined" @bind-Value="context.GroupId" OnValueChanged="async id => await OnGroupChanged(id, context.Id)">

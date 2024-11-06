@@ -12,8 +12,8 @@ using Tasker.Web.Data;
 namespace Tasker.Web.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241016161108_update3")]
-    partial class update3
+    [Migration("20241023143608_SubjectUpdate2")]
+    partial class SubjectUpdate2
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -117,13 +117,13 @@ namespace Tasker.Web.Migrations
                     b.Property<string>("LoginProvider")
                         .HasColumnType("text");
 
-                    b.Property<string>("ShortName")
+                    b.Property<string>("Name")
                         .HasColumnType("text");
 
                     b.Property<string>("Value")
                         .HasColumnType("text");
 
-                    b.HasKey("UserId", "LoginProvider", "ShortName");
+                    b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
@@ -138,7 +138,7 @@ namespace Tasker.Web.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("text");
 
-                    b.Property<string>("ShortName")
+                    b.Property<string>("Name")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
@@ -226,7 +226,7 @@ namespace Tasker.Web.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("ShortName")
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -244,14 +244,17 @@ namespace Tasker.Web.Migrations
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTimeOffset?>("Deadline")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateOnly>("Deadline")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("Deleted")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("ShortName")
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -276,6 +279,10 @@ namespace Tasker.Web.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<Guid>("GroupId")
                         .HasColumnType("uuid");
 
@@ -296,7 +303,7 @@ namespace Tasker.Web.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("ShortName")
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
 

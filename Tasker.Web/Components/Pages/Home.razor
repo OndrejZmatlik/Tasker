@@ -6,54 +6,76 @@
 @using Tasker.Web.Data.Services
 @inject TasksService TasksService
 @inject AuthenticationStateProvider _authenticationStateProvider
+@inject NavigationManager nav
+@inject ISnackbar snackbar
 @rendermode InteractiveServer
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <MudPaper Elevation="4" Class="p-4">
-        <MudGrid>
-            <MudItem xs="12">
-                <MudText Typo="Typo.h4" GutterBottom="true">Úkoly a testy</MudText>
-            </MudItem>
-            <MudItem xs="12" Class="text-end">
+        <MudText Typo="Typo.h4" GutterBottom="true" Align="Align.Center">Úkoly a testy</MudText>
+        <MudStack Row Wrap="Wrap.Wrap" AlignItems="AlignItems.Center">
+            <MudSpacer />
+            <div>
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/Add">
                     <MudIcon Icon="@Icons.Material.Filled.Add" Class="me-2" /> Přidat zadání
                 </MudButton>
-            </MudItem>
-        </MudGrid>
+
+            </div>
+            <MudTooltip Text="Zobrazit historii">
+                <MudIconButton Icon="@Icons.Material.Filled.History" OnClick="ShowHistory" Color="@(ShowHistoryActive ? Color.Info : Color.Default)"></MudIconButton>
+            </MudTooltip>
+        </MudStack>
 
         <MudTable Items="SchoolTasks" Hover="true" Bordered="true">
             <HeaderContent>
                 <MudTh>Předmět</MudTh>
                 <MudTh>Typ</MudTh>
+                <MudTh>Nadpis</MudTh>
                 <MudTh>Zadání</MudTh>
                 <MudTh>Čas splnění</MudTh>
                 <MudTh>Akce</MudTh>
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Předmět">
-                    @(context.Subject.GroupId == Guid.Empty ? context.Subject.Name : context.Subject.Name + " " + context.Subject.Group.Name)
-                    @if ((context.LocalDeadline - DateTime.Now).TotalDays <= 1)
+                    <MudTooltip Text="@context.Subject.FullName">
+                        @(context.Subject.GroupId == Guid.Empty ? context.Subject.ShortName : context.Subject.ShortName + " " + context.Subject.Group.Name)
+                    </MudTooltip>
+                    @if ((context.Deadline.ToDateTime(TimeOnly.MinValue).Date - DateTime.Now.Date).TotalDays <= 1)
                     {
-                        <MudTooltip Text="Brzy">
-                            <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Error" Style="margin-left: 5px; vertical-align: middle;" />
+                        bool Done = false;
+                        if ((context.Deadline == DateOnly.FromDateTime(DateTime.Now) && DateTime.Now.Hour >= 16) || context.Deadline < DateOnly.FromDateTime(DateTime.Now))
+                        {
+                            Done = true;
+                        }
+
+                        <MudTooltip Text="@(Done ? "Hotovo" : "Brzy")">
+                            <MudIcon Icon="@(Done ? Icons.Material.Filled.Done : Icons.Material.Filled.Warning)"
+                                     Color="@(Done ? Color.Success : Color.Error)"
+                                     Style="margin-left: 5px; vertical-align: middle;" />
                         </MudTooltip>
                     }
                 </MudTd>
-                <MudTd>
+                <MudTd DataLabel="Typ">
                     <MudChip T="string" Color="Color.Primary" Variant="Variant.Filled" Label="true" Text="@context.TaskType.Name" />
+                </MudTd>
+                <MudTd DataLabel="Nadpis">
+                    @context.Name
                 </MudTd>
                 <MudTd DataLabel="Zadání">
                     @context.Description
-                    
+
                 </MudTd>
                 <MudTd DataLabel="Čas splnění">
-                    @(context.LocalDeadline.ToString("D", CultureInfo.GetCultureInfo("cs-CZ")))
+                    @(context.Deadline.ToString("D", CultureInfo.GetCultureInfo("cs-CZ")))
                     <code>
-                        <MudText Typo="Typo.caption">(@(context.LocalDeadline.Date.Humanize()))</MudText>
+                        <MudText Typo="Typo.caption">(@(context.Deadline.Humanize()))</MudText>
                     </code>
                 </MudTd>
                 <MudTd DataLabel="Akce">
-                    <MudButton Disabled="!IsLogin" Variant="Variant.Outlined" Color="Color.Error" OnClick="() => RemoveTask(context.Id)">
+                    <MudButton Disabled="ShowHistoryActive" Variant="Variant.Outlined" Color="Color.Info" OnClick="() => EditTask(context.Id)">
+                        <MudIcon Icon="@Icons.Material.Filled.Edit" />
+                    </MudButton>
+                    <MudButton Disabled="!IsLogin || ShowHistoryActive" Variant="Variant.Outlined" Color="Color.Error" OnClick="() => RemoveTask(context.Id)">
                         <MudIcon Icon="@Icons.Material.Filled.Delete" />
                     </MudButton>
                 </MudTd>
@@ -74,13 +96,30 @@
         SchoolTasks = await TasksService.GetSchoolTasksAsync();
         var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
         IsLogin = authState.User.Identity?.IsAuthenticated ?? false;
-        CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("cs-CZ");
     }
 
     [Authorize]
     private async Task RemoveTask(Guid id)
     {
         await TasksService.DeleteTaskAsync(id);
+        snackbar.Add("Zadání bylo úspěšně smazáno", Severity.Success);
+        SchoolTasks = await TasksService.GetSchoolTasksAsync();
+    }
+
+    private void EditTask(Guid id)
+    {
+        nav.NavigateTo($"/Edit/{id}");
+    }
+
+    private bool ShowHistoryActive { get; set; } = false;
+    private async Task ShowHistory()
+    {
+        ShowHistoryActive = !ShowHistoryActive;
+        if (ShowHistoryActive)
+        {
+            SchoolTasks = await TasksService.GetAllSchoolTasksAsync();
+            return;
+        }
         SchoolTasks = await TasksService.GetSchoolTasksAsync();
     }
 }

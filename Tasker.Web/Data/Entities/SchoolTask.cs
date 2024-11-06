@@ -18,10 +18,7 @@ namespace Tasker.Web.Data.Entities
         public DateTimeOffset Created { get; set; } = DateTimeOffset.UtcNow;
 
         [Required]
-        public DateTimeOffset Deadline { get; set; } = DateTimeOffset.UtcNow;
-
-        [NotMapped]
-        public DateTimeOffset LocalDeadline { get => Deadline.ToLocalTime(); set => Deadline = value; }
+        public DateOnly Deadline { get; set; }
 
         [Required, ForeignKey(nameof(TaskType))]
         public Guid TaskTypeId { get; set; }
@@ -34,6 +31,8 @@ namespace Tasker.Web.Data.Entities
 
         [ForeignKey(nameof(SubjectId))]
         public Subject Subject { get; set; } = null!;
+
+        public bool Deleted { get; set; } = false;
 
     }
 }

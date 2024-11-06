@@ -12,8 +12,8 @@ using Tasker.Web.Data;
 namespace Tasker.Web.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241016161108_update3")]
-    partial class update3
+    [Migration("20241023134413_DateOnlyUpdate")]
+    partial class DateOnlyUpdate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -244,8 +244,11 @@ namespace Tasker.Web.Migrations
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTimeOffset?>("Deadline")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateOnly>("Deadline")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("Deleted")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Description")
                         .IsRequired()

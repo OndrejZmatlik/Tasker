@@ -241,8 +241,11 @@ namespace Tasker.Web.Migrations
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTimeOffset?>("Deadline")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateOnly>("Deadline")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("Deleted")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -273,10 +276,14 @@ namespace Tasker.Web.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<Guid>("GroupId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("ShortName")
                         .IsRequired()
                         .HasColumnType("text");
 

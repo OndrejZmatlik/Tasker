@@ -9,7 +9,10 @@ namespace Tasker.Web.Data.Entities
         public Guid Id { get; set; } = Guid.NewGuid();
 
         [Required]
-        public string Name { get; set; } = string.Empty;
+        public string ShortName { get; set; } = string.Empty;
+
+        [Required]
+        public string FullName { get; set; } = string.Empty;
 
         [ForeignKey(nameof(Group))]
         public Guid GroupId { get; set; } = Guid.Empty;
