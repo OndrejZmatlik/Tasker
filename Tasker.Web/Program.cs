@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
+using System.Globalization;
 using Tasker.Web.Components;
 using Tasker.Web.Components.Account;
 using Tasker.Web.Data;
@@ -18,24 +19,34 @@ namespace Tasker.Web
 
             // Add services to the container.
             builder.Services.AddRazorComponents()
-                .AddInteractiveServerComponents();
+                            .AddInteractiveServerComponents();
             builder.Services.AddMudServices();
             builder.Services.AddCascadingAuthenticationState();
             builder.Services.AddScoped<IdentityUserAccessor>();
             builder.Services.AddScoped<IdentityRedirectManager>();
             builder.Services.AddScoped<TasksService>();
             builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
-
+            CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("cs-CZ");
+            CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("cs-CZ");
             builder.Services.AddAuthentication(options =>
                 {
                     options.DefaultScheme = IdentityConstants.ApplicationScheme;
                     options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
                 })
                 .AddIdentityCookies();
+            if (builder.Environment.IsDevelopment())
+            {
+                var connectionString = builder.Configuration.GetConnectionString("Development") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+                builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
+                    options.UseNpgsql(connectionString));
+            }
+            else
+            {
+                var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+                builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
+                    options.UseNpgsql(connectionString));
 
-            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-            builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
-                options.UseNpgsql(connectionString));
+            }
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
             builder.Services.AddIdentityCore<ApplicationUser>(options =>
@@ -60,6 +71,7 @@ namespace Tasker.Web
             var identitySeedData = new IdentitySeedData(scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>(), scope.ServiceProvider.GetRequiredService<ApplicationDbContext>());
             await identitySeedData.InitializeRoles();
             // Configure the HTTP request pipeline.
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseMigrationsEndPoint();
@@ -71,7 +83,13 @@ namespace Tasker.Web
 
             app.UseStaticFiles();
             app.UseAntiforgery();
+            string[] supportedCultures = ["cs-CZ"];
+            var localizationOptions = new RequestLocalizationOptions()
+                .SetDefaultCulture(supportedCultures[0])
+                .AddSupportedCultures(supportedCultures)
+                .AddSupportedUICultures(supportedCultures);
 
+            app.UseRequestLocalization(localizationOptions);
             app.MapRazorComponents<App>()
                 .AddInteractiveServerRenderMode();
 

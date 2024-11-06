@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System.Text;
 using Tasker.Web.Data.Entities;
+using static MudBlazor.CategoryTypes;
 
 namespace Tasker.Web.Data.Classes
 {
@@ -19,6 +20,10 @@ namespace Tasker.Web.Data.Classes
 
         public async Task InitializeRoles()
         {
+            var uuser = new ApplicationUser { UserName = "FilipHraba", Email = "hraba.filip@ssakhk.cz"  };
+            await _userManager.CreateAsync(uuser, "pass.word123");
+            uuser = new ApplicationUser { UserName = "LiborSenar", Email = "senar.libor@ssakhk.cz" };
+            await _userManager.CreateAsync(uuser, "pass.word123");
             if (!await _db.Users.AnyAsync())
             {
                 IEnumerable<ApplicationUser> Users =

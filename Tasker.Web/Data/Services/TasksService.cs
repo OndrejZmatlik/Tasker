@@ -17,18 +17,35 @@ namespace Tasker.Web.Data.Services
         public async Task<IEnumerable<SchoolTask>> GetSchoolTasksAsync()
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            return await dbContext.Tasks.Where(x => x.Deadline.Date > DateTimeOffset.UtcNow.Date.AddDays(-2))
+            return await dbContext.Tasks.Where(x => x.Deadline.ToDateTime(TimeOnly.MinValue) >= DateTime.Now.Date && !x.Deleted)
                                         .Include(x => x.TaskType)
                                         .Include(x => x.Subject)
                                         .ThenInclude(x => x.Group)
                                         .OrderBy(x => x.Deadline)
                                         .ToListAsync();
         }
+        public async Task<IEnumerable<SchoolTask>> GetAllSchoolTasksAsync()
+        {
+            using var dbContext = await dbContextFactory.CreateDbContextAsync();
+            return await dbContext.Tasks.Include(x => x.TaskType)
+                                        .Include(x => x.Subject)
+                                        .ThenInclude(x => x.Group)
+                                        .OrderByDescending(x => x.Deadline)
+                                        .ToListAsync();
+        }
+        public async Task<SchoolTask?> GetSchoolTaskAsync(Guid Id)
+        {
+            using var dbContext = await dbContextFactory.CreateDbContextAsync();
+            return await dbContext.Tasks.Include(x => x.TaskType)
+                                        .Include(x => x.Subject)
+                                        .ThenInclude(x => x.Group)
+                                        .FirstOrDefaultAsync(x => x.Id == Id);
+        }
 
         public async Task<IEnumerable<Subject>> GetSubjectsAsync()
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            return await dbContext.Subjects.Include(x => x.Group).ToListAsync();
+            return await dbContext.Subjects.Include(x => x.Group).OrderBy(x => x.ShortName).ThenBy(x => x.Group.Name).ToListAsync();
         }
 
         public async Task<IEnumerable<Group>> GetGroupsAsync()
@@ -40,7 +57,7 @@ namespace Tasker.Web.Data.Services
         public async Task<IEnumerable<TaskType>> GetAssignmentTypesAsync()
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            return await dbContext.TaskTypes.ToListAsync();
+            return await dbContext.TaskTypes.OrderBy(x => x.Name).ToListAsync();
         }
 
         public async Task DeleteGroupAsync(Guid Id)
@@ -79,7 +96,7 @@ namespace Tasker.Web.Data.Services
         public async Task AddSubjectAsync()
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            await dbContext.Subjects.AddAsync(new Subject { Name = "New Subject" });
+            await dbContext.Subjects.AddAsync(new Subject { ShortName = "New Subject" });
             await dbContext.SaveChangesAsync();
         }
 
@@ -103,7 +120,8 @@ namespace Tasker.Web.Data.Services
             var result = await dbContext.Subjects.FindAsync(subject.Id);
             if (result is not null)
             {
-                result.Name = subject.Name;
+                result.ShortName = subject.ShortName;
+                result.FullName = subject.FullName;
                 result.GroupId = subject.GroupId;
                 await dbContext.SaveChangesAsync();
             }
@@ -141,7 +159,19 @@ namespace Tasker.Web.Data.Services
         public async Task DeleteTaskAsync(Guid Id)
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            await dbContext.Tasks.Where(x => x.Id == Id).ExecuteDeleteAsync();
+            var res = await dbContext.Tasks.FindAsync(Id);
+            if (res is not null)
+            {
+                res.Deleted = true;
+                await dbContext.SaveChangesAsync();
+            }
+        }
+
+        public async Task UpdateSchoolTaskAsync(SchoolTask schoolTask)
+        {
+            using var dbContext = await dbContextFactory.CreateDbContextAsync();
+            dbContext.Tasks.Update(schoolTask);
+            await dbContext.SaveChangesAsync();
         }
     }
 }

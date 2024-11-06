@@ -11,39 +11,31 @@ namespace Tasker.Web.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Subjects_Groups_GroupId",
-                table: "Subjects");
+            //migrationBuilder.DropForeignKey(
+            //    name: "FK_Subjects_Groups_GroupId",
+            //    table: "Subjects");
 
-            migrationBuilder.DropForeignKey(
-                name: "FK_Tasks_AspNetUsers_UserId",
-                table: "Tasks");
+            //migrationBuilder.DropColumn(
+            //    name: "UserId",
+            //    table: "Tasks");
 
-            migrationBuilder.DropIndex(
-                name: "IX_Tasks_UserId",
-                table: "Tasks");
+            //migrationBuilder.AlterColumn<Guid>(
+            //    name: "GroupId",
+            //    table: "Subjects",
+            //    type: "uuid",
+            //    nullable: false,
+            //    defaultValue: new Guid("00000000-0000-0000-0000-000000000000"),
+            //    oldClrType: typeof(Guid),
+            //    oldType: "uuid",
+            //    oldNullable: true);
 
-            migrationBuilder.DropColumn(
-                name: "UserId",
-                table: "Tasks");
-
-            migrationBuilder.AlterColumn<Guid>(
-                name: "GroupId",
-                table: "Subjects",
-                type: "uuid",
-                nullable: false,
-                defaultValue: new Guid("00000000-0000-0000-0000-000000000000"),
-                oldClrType: typeof(Guid),
-                oldType: "uuid",
-                oldNullable: true);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_Subjects_Groups_GroupId",
-                table: "Subjects",
-                column: "GroupId",
-                principalTable: "Groups",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+            //migrationBuilder.AddForeignKey(
+            //    name: "FK_Subjects_Groups_GroupId",
+            //    table: "Subjects",
+            //    column: "GroupId",
+            //    principalTable: "Groups",
+            //    principalColumn: "Id",
+            //    onDelete: ReferentialAction.Cascade);
         }
 
         /// <inheritdoc />

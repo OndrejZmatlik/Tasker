@@ -1,4 +1,5 @@
-﻿@page "/Add/{Id?}"
+﻿@page "/Add"
+@page "/Edit/{Id:guid}"
 @using System.ComponentModel.DataAnnotations
 @using System.Security.Claims
 @using Tasker.Web.Data.Entities
@@ -6,11 +7,21 @@
 @inject TasksService TasksService
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider _authenticationStateProvider
+@inject ISnackbar Snackbar
 @rendermode InteractiveServer
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <MudPaper Elevation="4" Class="p-4">
-        <MudText Typo="Typo.h4" GutterBottom="true">Přidat nové zadání</MudText>
+        @if (IsEdit)
+        {
+            <MudText Typo="Typo.h4" GutterBottom="true">Upravit zadání</MudText>
+
+        }
+        else
+        {
+            <MudText Typo="Typo.h4" GutterBottom="true">Přidat nové zadání</MudText>
+
+        }
         <EditForm Model="inputModel" OnValidSubmit="SubmitAssignment">
             <DataAnnotationsValidator />
             <ValidationSummary />
@@ -27,12 +38,12 @@
             <MudSelect Variant="Variant.Outlined" T="string" @bind-Value="inputModel.SubjectId" Label="Vyberte předmět" Required="true">
                 @foreach (var subject in subjects)
                 {
-                    <MudSelectItem Value="@subject.Id.ToString()">@(subject.GroupId == Guid.Empty ? subject.Name : subject.Name + subject.Group.Name)</MudSelectItem>
+                    <MudSelectItem Value="@subject.Id.ToString()">@(subject.GroupId == Guid.Empty ? subject.ShortName : subject.ShortName + subject.Group.Name)</MudSelectItem>
                 }
             </MudSelect>
 
             <MudButton Variant="Variant.Filled" Color="Color.Primary" ButtonType="ButtonType.Submit">
-                <MudIcon Icon="@Icons.Material.Filled.Save" /> Přidat zadání
+                <MudIcon Icon="@Icons.Material.Filled.Save" /> @(IsEdit ? "Uložit" : "Přidat")
             </MudButton>
         </EditForm>
     </MudPaper>
@@ -43,15 +54,29 @@
     private IEnumerable<Subject> subjects = new List<Subject>();
     private IEnumerable<TaskType> types = new List<TaskType>();
     private Guid UserId;
-    [Parameter] public string? Id { get; set; }
-    private bool IsEdit => Id != null;
+    [Parameter] public Guid Id { get; set; }
+    private bool IsEdit => Id != Guid.Empty;
+
     protected override async Task OnInitializedAsync()
     {
         subjects = await TasksService.GetSubjectsAsync();
         types = await TasksService.GetAssignmentTypesAsync();
         var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-
+        if (IsEdit)
+        {
+            var task = await TasksService.GetSchoolTaskAsync(Id);
+            if (task is null)
+            {
+                NavigationManager.NavigateTo("/");
+                return;
+            }
+            inputModel.SubjectId = task.SubjectId.ToString();
+            inputModel.TaskTypeId = task.TaskTypeId.ToString();
+            inputModel.Name = task.Name;
+            inputModel.Description = task.Description;
+            inputModel.Deadline = task.Deadline.ToDateTime(TimeOnly.MinValue);
+        }
         var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
         if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId))
         {
@@ -63,10 +88,19 @@
     {
         newAssignment.Name = inputModel.Name;
         newAssignment.Description = inputModel.Description;
-        newAssignment.LocalDeadline = inputModel.Deadline.HasValue ? inputModel.Deadline.Value.ToUniversalTime() : DateTimeOffset.UtcNow;
+        newAssignment.Deadline = inputModel.Deadline.HasValue ? DateOnly.FromDateTime(inputModel.Deadline.Value) : DateOnly.FromDateTime(DateTime.Now);
         newAssignment.SubjectId = Guid.Parse(inputModel.SubjectId);
         newAssignment.TaskTypeId = Guid.Parse(inputModel.TaskTypeId);
+        if (IsEdit)
+        {
+            newAssignment.Id = Id;
+            await TasksService.UpdateSchoolTaskAsync(newAssignment);
+            Snackbar.Add("Zadání bylo úspěšně upraveno", Severity.Success);
+            NavigationManager.NavigateTo("/");
+            return;
+        }
         await TasksService.AddTaskAsync(newAssignment);
+        Snackbar.Add("Zadání bylo úspěšně přidáno", Severity.Success);
         NavigationManager.NavigateTo("/");
     }
 
