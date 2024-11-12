@@ -9,5 +9,7 @@ namespace Tasker.Web.Data.Entities
 
         [Required]
         public string Name { get; set; } = string.Empty;
+
+        override public string ToString() => Name;
     }
 }

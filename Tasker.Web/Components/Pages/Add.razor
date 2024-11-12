@@ -29,16 +29,16 @@
             <MudTextField Variant="Variant.Outlined" @bind-Value="inputModel.Name" Label="Název zadání" Required="true" />
             <MudTextField Variant="Variant.Outlined" @bind-Value="inputModel.Description" Label="Obsah zadání" Required="true" />
             <MudDatePicker Variant="Variant.Outlined" @bind-Date="inputModel.Deadline" Label="Termín" Required="true" />
-            <MudSelect Clearable Variant="Variant.Outlined" T="string" @bind-Value="inputModel.TaskTypeId" Label="Vyberte typ" Required="true">
+            <MudSelect Clearable Variant="Variant.Outlined" @bind-Value="inputModel.TaskTypeId" Label="Vyberte typ" Required="true">
                 @foreach (var subject in types)
                 {
-                    <MudSelectItem Value="@subject.Id.ToString()">@(subject.Name)</MudSelectItem>
+                    <MudSelectItem Value="@subject">@(subject.Name)</MudSelectItem>
                 }
             </MudSelect>
-            <MudSelect Variant="Variant.Outlined" T="string" @bind-Value="inputModel.SubjectId" Label="Vyberte předmět" Required="true">
+            <MudSelect Clearable Variant="Variant.Outlined" @bind-Value="inputModel.SubjectId" Label="Vyberte předmět" Required="true">
                 @foreach (var subject in subjects)
                 {
-                    <MudSelectItem Value="@subject.Id.ToString()">@(subject.GroupId == Guid.Empty ? subject.ShortName : subject.ShortName + subject.Group.Name)</MudSelectItem>
+                    <MudSelectItem Value="@subject">@($"{subject.ShortName}{(subject.GroupId != Guid.Empty ? $" {subject.Group.Name}" : string.Empty)}") - <code>@subject.FullName</code></MudSelectItem>
                 }
             </MudSelect>
 
@@ -71,8 +71,10 @@
                 NavigationManager.NavigateTo("/");
                 return;
             }
-            inputModel.SubjectId = task.SubjectId.ToString();
-            inputModel.TaskTypeId = task.TaskTypeId.ToString();
+            // inputModel.SubjectId = task.SubjectId.ToString();
+            // inputModel.TaskTypeId = task.TaskTypeId.ToString();
+            inputModel.SubjectId = task.Subject;
+            inputModel.TaskTypeId = task.TaskType;
             inputModel.Name = task.Name;
             inputModel.Description = task.Description;
             inputModel.Deadline = task.Deadline.ToDateTime(TimeOnly.MinValue);
@@ -89,8 +91,10 @@
         newAssignment.Name = inputModel.Name;
         newAssignment.Description = inputModel.Description;
         newAssignment.Deadline = inputModel.Deadline.HasValue ? DateOnly.FromDateTime(inputModel.Deadline.Value) : DateOnly.FromDateTime(DateTime.Now);
-        newAssignment.SubjectId = Guid.Parse(inputModel.SubjectId);
-        newAssignment.TaskTypeId = Guid.Parse(inputModel.TaskTypeId);
+        // newAssignment.SubjectId = Guid.Parse(inputModel.SubjectId);
+        // newAssignment.TaskTypeId = Guid.Parse(inputModel.TaskTypeId);
+        newAssignment.SubjectId = inputModel.SubjectId.Id;
+        newAssignment.TaskTypeId = inputModel.TaskTypeId.Id;
         if (IsEdit)
         {
             newAssignment.Id = Id;
@@ -118,10 +122,10 @@
         public DateTime? Deadline { get; set; }
 
         [Required]
-        public string SubjectId { get; set; } = string.Empty;
+        public Subject SubjectId { get; set; } = new();
 
         [Required]
-        public string TaskTypeId { get; set; } = string.Empty;
+        public TaskType TaskTypeId { get; set; } = new();
 
     }
 }
