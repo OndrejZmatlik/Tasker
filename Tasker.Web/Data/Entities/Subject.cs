@@ -19,5 +19,13 @@ namespace Tasker.Web.Data.Entities
 
         [ForeignKey(nameof(GroupId))]
         public Group Group { get; set; } = null!;
+
+        [NotMapped]
+        public string Title => $"{ShortName}{(GroupId != Guid.Empty ? $" {Group.Name}" : string.Empty)} - {FullName}";
+
+        [NotMapped]
+        public string TitleShort => $"{ShortName}{(GroupId != Guid.Empty ? $" {Group.Name}" : string.Empty)}";
+
+        override public string ToString() => ShortName;
     }
 }

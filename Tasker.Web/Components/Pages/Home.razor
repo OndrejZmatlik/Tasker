@@ -9,12 +9,18 @@
 @inject NavigationManager nav
 @inject ISnackbar snackbar
 @rendermode InteractiveServer
-
+<MudScrollToTop>
+    <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.KeyboardArrowUp" />
+</MudScrollToTop>
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <MudPaper Elevation="4" Class="p-4">
         <MudText Typo="Typo.h4" GutterBottom="true" Align="Align.Center">Úkoly a testy</MudText>
         <MudStack Row Wrap="Wrap.Wrap" AlignItems="AlignItems.Center">
             <MudSpacer />
+            <div>
+                <MudDatePicker Clearable DateChanged="Filter" Variant="Variant.Outlined" Date="DateFilter" Label="Filtr" />
+
+            </div>
             <div>
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/Add">
                     <MudIcon Icon="@Icons.Material.Filled.Add" Class="me-2" /> Přidat zadání
@@ -26,7 +32,7 @@
             </MudTooltip>
         </MudStack>
 
-        <MudTable Items="SchoolTasks" Hover="true" Bordered="true">
+        <MudTable Loading="Loading" Items="SchoolTasks" Hover="true" Bordered="true">
             <HeaderContent>
                 <MudTh>Předmět</MudTh>
                 <MudTh>Typ</MudTh>
@@ -90,12 +96,23 @@
 @code {
     private IEnumerable<SchoolTask> SchoolTasks { get; set; } = [];
     private bool IsLogin { get; set; } = false;
+    private DateTime? DateFilter { get; set; }
+    private bool Loading { get; set; } = false;
 
     protected override async Task OnInitializedAsync()
     {
+        Loading = true;
         SchoolTasks = await TasksService.GetSchoolTasksAsync();
         var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
         IsLogin = authState.User.Identity?.IsAuthenticated ?? false;
+        Loading = false;
+        foreach (var item in SchoolTasks.Where(x => (x.Deadline.ToDateTime(TimeOnly.MinValue).Date - DateTime.Now.Date).TotalDays == 1))
+        {
+            var remainingHours = (item.Deadline.ToDateTime(TimeOnly.MinValue) - DateTime.Now).TotalHours;
+            snackbar.Add($"Zbývá {remainingHours:F0} hodin na splnění úkolu: {item.Subject.TitleShort} - {item.Name}",
+                         remainingHours <= 6 ? Severity.Error : Severity.Warning);
+        }
+
     }
 
     [Authorize]
@@ -114,12 +131,29 @@
     private bool ShowHistoryActive { get; set; } = false;
     private async Task ShowHistory()
     {
+        Loading = true;
         ShowHistoryActive = !ShowHistoryActive;
         if (ShowHistoryActive)
         {
             SchoolTasks = await TasksService.GetAllSchoolTasksAsync();
+            Loading = false;
             return;
         }
         SchoolTasks = await TasksService.GetSchoolTasksAsync();
+        Loading = false;
+    }
+
+    private async Task Filter(DateTime? dateTime)
+    {
+        Loading = true;
+        DateFilter = dateTime;
+        if (DateFilter is null)
+        {
+            SchoolTasks = await TasksService.GetSchoolTasksAsync();
+            Loading = false;
+            return;
+        }
+        SchoolTasks = await TasksService.GetSchoolTasksAsync(DateOnly.FromDateTime(DateFilter.Value));
+        Loading = false;
     }
 }

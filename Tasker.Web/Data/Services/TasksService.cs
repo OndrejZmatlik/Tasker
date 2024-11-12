@@ -24,6 +24,18 @@ namespace Tasker.Web.Data.Services
                                         .OrderBy(x => x.Deadline)
                                         .ToListAsync();
         }
+
+        public async Task<IEnumerable<SchoolTask>> GetSchoolTasksAsync(DateOnly DateFilter)
+        {
+            using var dbContext = await dbContextFactory.CreateDbContextAsync();
+            return await dbContext.Tasks.Where(x => x.Deadline == DateFilter && !x.Deleted)
+                                        .Include(x => x.TaskType)
+                                        .Include(x => x.Subject)
+                                        .ThenInclude(x => x.Group)
+                                        .OrderBy(x => x.Deadline)
+                                        .ToListAsync();
+        }
+
         public async Task<IEnumerable<SchoolTask>> GetAllSchoolTasksAsync()
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
@@ -96,21 +108,21 @@ namespace Tasker.Web.Data.Services
         public async Task AddSubjectAsync()
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            await dbContext.Subjects.AddAsync(new Subject { ShortName = "New Subject" });
+            await dbContext.Subjects.AddAsync(new Subject { ShortName = "Z - New Subject" });
             await dbContext.SaveChangesAsync();
         }
 
         public async Task AddGroupAsync()
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            await dbContext.Groups.AddAsync(new Group { Name = "New Group" });
+            await dbContext.Groups.AddAsync(new Group { Name = "Z - New Group" });
             await dbContext.SaveChangesAsync();
         }
 
         public async Task AddAssignmentTypeAsync()
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            await dbContext.TaskTypes.AddAsync(new TaskType { Name = "New Task Type" });
+            await dbContext.TaskTypes.AddAsync(new TaskType { Name = "Z - New Task Type" });
             await dbContext.SaveChangesAsync();
         }
 
