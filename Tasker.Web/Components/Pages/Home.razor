@@ -56,8 +56,8 @@
 
                         <MudTooltip Text="@(Done ? "Hotovo" : "Brzy")">
                             <MudIcon Icon="@(Done ? Icons.Material.Filled.Done : Icons.Material.Filled.Warning)"
-                                     Color="@(Done ? Color.Success : Color.Error)"
-                                     Style="margin-left: 5px; vertical-align: middle;" />
+                            Color="@(Done ? Color.Success : Color.Error)"
+                            Style="margin-left: 5px; vertical-align: middle;" />
                         </MudTooltip>
                     }
                 </MudTd>
@@ -78,12 +78,17 @@
                     </code>
                 </MudTd>
                 <MudTd DataLabel="Akce">
-                    <MudButton Disabled="ShowHistoryActive" Variant="Variant.Outlined" Color="Color.Info" OnClick="() => EditTask(context.Id)">
-                        <MudIcon Icon="@Icons.Material.Filled.Edit" />
-                    </MudButton>
-                    <MudButton Disabled="!IsLogin || ShowHistoryActive" Variant="Variant.Outlined" Color="Color.Error" OnClick="() => RemoveTask(context.Id)">
-                        <MudIcon Icon="@Icons.Material.Filled.Delete" />
-                    </MudButton>
+                    <MudStack Row Wrap="Wrap.Wrap" Spacing="1">
+                        <MudButton Disabled="ShowHistoryActive" Variant="Variant.Outlined" Color="Color.Info" OnClick="() => EditTask(context.Id)">
+                            <MudIcon Icon="@Icons.Material.Filled.Edit" />
+                        </MudButton>
+                        <MudButton Disabled="!IsLogin || ShowHistoryActive" Variant="Variant.Outlined" Color="Color.Error" OnClick="() => RemoveTask(context.Id)">
+                            <MudIcon Icon="@Icons.Material.Filled.Delete" />
+                        </MudButton>
+                        <MudButton Disabled="!IsLogin || !context.Deleted" Variant="Variant.Outlined" Color="Color.Success" OnClick="() => RestoreTask(context.Id)">
+                            <MudIcon Icon="@Icons.Material.Filled.Restore" />
+                        </MudButton>
+                    </MudStack>
                 </MudTd>
 
             </RowTemplate>
@@ -118,9 +123,22 @@
     [Authorize]
     private async Task RemoveTask(Guid id)
     {
+        Loading = true;
         await TasksService.DeleteTaskAsync(id);
         snackbar.Add("Zadání bylo úspěšně smazáno", Severity.Success);
         SchoolTasks = await TasksService.GetSchoolTasksAsync();
+        Loading = false;
+    }
+
+    [Authorize]
+    private async Task RestoreTask(Guid id)
+    {
+        Loading = true;
+        await TasksService.RestoreTaskAsync(id);
+        snackbar.Add("Zadání bylo úspěšně obnoveno", Severity.Success);
+        SchoolTasks = await TasksService.GetSchoolTasksAsync();
+        ShowHistoryActive = false;
+        Loading = false;
     }
 
     private void EditTask(Guid id)

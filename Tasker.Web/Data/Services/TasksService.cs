@@ -179,6 +179,17 @@ namespace Tasker.Web.Data.Services
             }
         }
 
+        public async Task RestoreTaskAsync(Guid Id)
+        {
+            using var dbContext = await dbContextFactory.CreateDbContextAsync();
+            var res = await dbContext.Tasks.FindAsync(Id);
+            if (res is not null)
+            {
+                res.Deleted = false;
+                await dbContext.SaveChangesAsync();
+            }
+        }
+
         public async Task UpdateSchoolTaskAsync(SchoolTask schoolTask)
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
