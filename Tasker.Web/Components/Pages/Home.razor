@@ -107,7 +107,8 @@
     protected override async Task OnInitializedAsync()
     {
         Loading = true;
-        SchoolTasks = await TasksService.GetSchoolTasksAsync();
+        await Init();
+        Refresh.OnChange += RefreshView;
         var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
         IsLogin = authState.User.Identity?.IsAuthenticated ?? false;
         Loading = false;
@@ -117,7 +118,17 @@
             snackbar.Add($"Zbývá {remainingHours:F0} hodin na splnění úkolu: {item.Subject.TitleShort} - {item.Name}",
                          remainingHours <= 6 ? Severity.Error : Severity.Warning);
         }
+    }
 
+    private async Task RefreshView()
+    {
+        await Init();
+        snackbar.Add("Data byla úspěšně obnovena", Severity.Info);
+    }
+
+    private async Task Init()
+    {
+        SchoolTasks = await TasksService.GetSchoolTasksAsync();
     }
 
     [Authorize]
@@ -127,6 +138,7 @@
         await TasksService.DeleteTaskAsync(id);
         snackbar.Add("Zadání bylo úspěšně smazáno", Severity.Success);
         SchoolTasks = await TasksService.GetSchoolTasksAsync();
+        await Refresh.CallRequestRefresh();
         Loading = false;
     }
 
@@ -138,6 +150,7 @@
         snackbar.Add("Zadání bylo úspěšně obnoveno", Severity.Success);
         SchoolTasks = await TasksService.GetSchoolTasksAsync();
         ShowHistoryActive = false;
+        await Refresh.CallRequestRefresh();
         Loading = false;
     }
 

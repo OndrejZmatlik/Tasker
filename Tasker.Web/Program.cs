@@ -27,6 +27,7 @@ namespace Tasker.Web
             builder.Services.AddScoped<IdentityUserAccessor>();
             builder.Services.AddScoped<IdentityRedirectManager>();
             builder.Services.AddScoped<TasksService>();
+            builder.Services.AddTransient<Refresh>();
             builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
             CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("cs-CZ");
             CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("cs-CZ");

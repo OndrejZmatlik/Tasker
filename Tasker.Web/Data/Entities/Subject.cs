@@ -26,6 +26,10 @@ namespace Tasker.Web.Data.Entities
         [NotMapped]
         public string TitleShort => $"{ShortName}{(GroupId != Guid.Empty ? $" {Group.Name}" : string.Empty)}";
 
-        override public string ToString() => ShortName;
+        public override bool Equals(object? obj) => obj is Subject subject && Id == subject.Id;
+
+        public override int GetHashCode() => Id.GetHashCode();
+
+        override public string ToString() => Title;
     }
 }
