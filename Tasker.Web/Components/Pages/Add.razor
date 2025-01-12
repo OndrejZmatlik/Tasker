@@ -38,7 +38,7 @@
             <MudSelect Clearable Variant="Variant.Outlined" @bind-Value="inputModel.SubjectId" Label="Vyberte předmět" Required="true">
                 @foreach (var subject in subjects)
                 {
-                    <MudSelectItem Value="@subject">@($"{subject.ShortName}{(subject.GroupId != Guid.Empty ? $" {subject.Group.Name}" : string.Empty)}") - <code>@subject.FullName</code></MudSelectItem>
+                    <MudSelectItem Value="@(subject)">@($"{subject.ShortName}{(subject.GroupId != Guid.Empty ? $" {subject.Group.Name}" : string.Empty)}") - <code>@subject.FullName</code></MudSelectItem>
                 }
             </MudSelect>
 
@@ -100,11 +100,13 @@
             newAssignment.Id = Id;
             await TasksService.UpdateSchoolTaskAsync(newAssignment);
             Snackbar.Add("Zadání bylo úspěšně upraveno", Severity.Success);
+            await Refresh.CallRequestRefresh();
             NavigationManager.NavigateTo("/");
             return;
         }
         await TasksService.AddTaskAsync(newAssignment);
         Snackbar.Add("Zadání bylo úspěšně přidáno", Severity.Success);
+        await Refresh.CallRequestRefresh();
         NavigationManager.NavigateTo("/");
     }
 
