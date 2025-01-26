@@ -115,7 +115,7 @@
         foreach (var item in SchoolTasks.Where(x => (x.Deadline.ToDateTime(TimeOnly.MinValue).Date - DateTime.Now.Date).TotalDays == 1))
         {
             var remainingHours = (item.Deadline.ToDateTime(TimeOnly.MinValue) - DateTime.Now).TotalHours;
-            snackbar.Add($"Zbývá {remainingHours:F0} hodin na splnění úkolu: {item.Subject.TitleShort} - {item.Name}",
+            snackbar.Add($"Zbývá {remainingHours:F0} hodin na splnění zadání: {item.Subject.TitleShort} - {item.Name}",
                          remainingHours <= 6 ? Severity.Error : Severity.Warning);
         }
     }
