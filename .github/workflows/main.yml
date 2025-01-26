@@ -19,7 +19,7 @@ jobs:
         DOCKER_IMAGE_NAME: ${{ secrets.DOCKER_IMAGE_NAME }}
         DOCKER_TAG: ${{ secrets.DOCKER_TAG }}
       run: |
-        docker build --platform linux/arm64 --no-cache -t $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME:$DOCKER_TAG .
+        docker build --platform linux/arm64 --no-cache -t $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME:$DOCKER_TAG -f Tasker.Web/Dockerfile Tasker.Web
         docker push $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME:$DOCKER_TAG
 
     - name: Deploy with Docker Compose
