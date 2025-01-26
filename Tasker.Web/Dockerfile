@@ -20,11 +20,10 @@ COPY . .
 WORKDIR /src
 
 # Kompilace aplikace
-RUN dotnet build "./Tasker.Web.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "./Tasker.Web.csproj" -c $BUILD_CONFIGURATION -o /app/build /p:UseAppHost=false
 
 # Tato fáze slouží k publikování projektu pro finální fázi
 FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "./Tasker.Web.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # Finální fáze pro produkci
