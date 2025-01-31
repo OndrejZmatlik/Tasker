@@ -29,13 +29,10 @@ jobs:
         DOCKER_IMAGE_NAME: ${{ secrets.DOCKER_IMAGE_NAME }}
         DOCKER_TAG: ${{ secrets.DOCKER_TAG }}
       run: |
+        docker buildx create --use --name mybuilder
+        docker buildx inspect --bootstrap
         cd Tasker.Web
-        docker buildx build \
-          --platform linux/arm64 \
-          --no-cache \
-          --push \
-          -t $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME:$DOCKER_TAG \
-          -f Dockerfile .
+        docker buildx build --platform linux/arm64 --no-cache -t $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME:$DOCKER_TAG -f Dockerfile --push .
 
     - name: Deploy with Docker Compose
       env:
@@ -51,8 +48,7 @@ jobs:
         mkdir -p ~/.ssh
         echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p $SSH_PORT $REMOTE_USER@$REMOTE_SERVER << EOF
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p $SSH_PORT $REMOTE_USER@$REMOTE_SERVER << 'EOF'
           docker pull $DOCKER_REGISTRY_LOCAL/$DOCKER_IMAGE_NAME:$DOCKER_TAG
           docker compose -f $COMPOSE_FILE_PATH down
           docker compose -f $COMPOSE_FILE_PATH pull
