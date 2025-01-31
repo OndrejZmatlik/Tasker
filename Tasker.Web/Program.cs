@@ -85,8 +85,8 @@ namespace Tasker.Web
                 app.UseExceptionHandler("/Error");
             }
 
-            app.UseStaticFiles();
-            //app.MapStaticAssets();
+            //app.UseStaticFiles();
+            app.MapStaticAssets();
             app.UseAntiforgery();
             string[] supportedCultures = ["cs-CZ"];
             var localizationOptions = new RequestLocalizationOptions()
