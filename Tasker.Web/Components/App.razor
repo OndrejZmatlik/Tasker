@@ -5,12 +5,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
-    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
-    <link rel="stylesheet" href="@Assets["app.css"]" />
-    <link rel="stylesheet" href="@Assets["Tasker.Web.styles.css"]" />
-    @* <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" /> *@
-    @* <link rel="stylesheet" href="app.css" /> *@
-    @* <link rel="stylesheet" href="Tasker.Web.styles.css" /> *@
+    @* <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" /> *@
+    @* <link rel="stylesheet" href="@Assets["app.css"]" /> *@
+    @* <link rel="stylesheet" href="@Assets["Tasker.Web.styles.css"]" /> *@
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="app.css" />
+    <link rel="stylesheet" href="Tasker.Web.styles.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
     <ImportMap />
@@ -30,7 +30,7 @@
     private HttpContext HttpContext { get; set; } = default!;
 
     private IComponentRenderMode? PageRenderMode =>
-        HttpContext.AcceptsInteractiveRouting() ? InteractiveServer : null;
+        HttpContext.AcceptsInteractiveRouting() ? new InteractiveServerRenderMode(prerender: false) : null;
 
     // private IComponentRenderMode? PageRenderMode => HttpContext.Request.Path.StartsWithSegments("/Account")
     //     ? null

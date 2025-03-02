@@ -8,6 +8,9 @@
     <UserSecretsId>aspnet-Tasker.Web-a8c7f53b-a9f9-4e15-866c-2083ed6dcc39</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>.</DockerfileContext>
+    <RuntimeIdentifiers>linux-x64</RuntimeIdentifiers>
+    <EnableSdkContainerDebugging>True</EnableSdkContainerDebugging>
+    <ContainerBaseImage>mcr.microsoft.com/dotnet/aspnet:9.0</ContainerBaseImage>
   </PropertyGroup>
 
   <ItemGroup>

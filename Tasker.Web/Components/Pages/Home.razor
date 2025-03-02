@@ -8,7 +8,7 @@
 @inject AuthenticationStateProvider _authenticationStateProvider
 @inject NavigationManager nav
 @inject ISnackbar snackbar
-@rendermode InteractiveServer
+
 <MudScrollToTop>
     <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.KeyboardArrowUp" />
 </MudScrollToTop>
@@ -123,6 +123,7 @@
     private async Task RefreshView()
     {
         await Init();
+        await InvokeAsync(StateHasChanged);
         snackbar.Add("Data byla úspěšně obnovena", Severity.Info);
     }
 

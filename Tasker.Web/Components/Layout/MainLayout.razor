@@ -1,5 +1,8 @@
 ﻿@inherits LayoutComponentBase
 
+<HeadContent>
+    <meta name="theme-color" content="@(_isDarkMode ? "#1a1a27" : "#ffffff")" />
+</HeadContent>
 <MudThemeProvider @ref="_mudThemeProvider" Theme="@_theme" IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
 <MudDialogProvider />
@@ -16,7 +19,7 @@
     </MudDrawer>
     <MudMainContent Class="mt-16 pa-4">
         @Body
-        <footer class="border-top footer text-muted mb-3 mt-4">
+        <footer class="border-top footer mb-3 mt-4">
             <MudStack Row Class="mt-2">
                 @{
                     string year = DateTime.Now.Year.ToString();
