@@ -24,6 +24,8 @@ namespace Tasker.Web.Data.Classes
             await _userManager.CreateAsync(uuser, "pass.word123");
             uuser = new ApplicationUser { UserName = "LiborSenar", Email = "senar.libor@ssakhk.cz" };
             await _userManager.CreateAsync(uuser, "pass.word123");
+            uuser = new ApplicationUser { UserName = "ChladekOndrej", Email = "chladek.ondrej@ssakhk.cz" };
+            await _userManager.CreateAsync(uuser, "pass.word123");
             if (!await _db.Users.AnyAsync())
             {
                 IEnumerable<ApplicationUser> Users =

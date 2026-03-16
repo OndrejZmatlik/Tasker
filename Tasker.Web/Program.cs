@@ -10,6 +10,9 @@ using Tasker.Web.Components.Account;
 using Tasker.Web.Data;
 using Tasker.Web.Data.Classes;
 using Tasker.Web.Data.Services;
+using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography;
+using Microsoft.OpenApi;
 
 namespace Tasker.Web
 {
@@ -18,11 +21,33 @@ namespace Tasker.Web
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-
+            if (builder.Environment.IsProduction())
+            {
+                var cert = CreateSelfSignedCertificate();
+                builder.WebHost.ConfigureKestrel((context, options) =>
+                {
+                    options.ConfigureEndpointDefaults(t =>
+                    {
+                        t.UseHttps(cert);
+                    });
+                    options.ConfigureHttpsDefaults(httpsOptions =>
+                    {
+                        httpsOptions.ServerCertificate = cert;
+                        httpsOptions.ServerCertificateSelector = (connectionContext, name) => cert;
+                    });
+                });
+            }
             // Add services to the container.
             builder.Services.AddRazorComponents()
                             .AddInteractiveServerComponents();
             builder.Services.AddMudServices();
+            builder.Services.AddControllers();
+            builder.Services.AddOpenApi();
+
+            builder.Services.AddSwaggerGen(options =>
+            {
+                options.SwaggerDoc("v1", new OpenApiInfo { Title = "Tasker API", Version = "v1" });
+            });
             builder.Services.AddCascadingAuthenticationState();
             builder.Services.AddScoped<IdentityUserAccessor>();
             builder.Services.AddScoped<IdentityRedirectManager>();
@@ -35,6 +60,17 @@ namespace Tasker.Web
                 {
                     options.DefaultScheme = IdentityConstants.ApplicationScheme;
                     options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+                })
+                .AddOpenIdConnect("FarHive SSO", displayName: "FarHive SSO", options =>
+                {
+                    options.Authority = builder.Configuration["Authentication:FarHive:Authority"] ?? string.Empty;
+                    options.ClientId = builder.Configuration["Authentication:FarHive:ClientId"] ?? string.Empty;
+                    options.ClientSecret = builder.Configuration["Authentication:FarHive:ClientSecret"] ?? string.Empty;
+                    options.ResponseType = "code";
+                    options.SaveTokens = true;
+                    options.Scope.Add("email");
+                    options.CallbackPath = builder.Configuration["Authentication:FarHive:SignInPath"] ?? string.Empty;
+                    options.SignedOutCallbackPath = builder.Configuration["Authentication:FarHive:LogOutPath"] ?? string.Empty;
                 })
                 .AddIdentityCookies();
             if (builder.Environment.IsDevelopment())
@@ -62,6 +98,7 @@ namespace Tasker.Web
                 options.Password.RequireUppercase = false;
                 options.User.RequireUniqueEmail = true;
                 options.SignIn.RequireConfirmedEmail = false;
+                options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
             })
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddSignInManager()
@@ -93,15 +130,41 @@ namespace Tasker.Web
                 .SetDefaultCulture(supportedCultures[0])
                 .AddSupportedCultures(supportedCultures)
                 .AddSupportedUICultures(supportedCultures);
-
+            app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
             app.UseRequestLocalization(localizationOptions);
             app.MapRazorComponents<App>()
                 .AddInteractiveServerRenderMode();
-
+            app.MapControllers();
             // Add additional endpoints required by the Identity /Account Razor components.
-            app.MapAdditionalIdentityEndpoints();
-
+            //app.MapAdditionalIdentityEndpoints();
+            app.MapOpenApi();
+            app.UseSwagger();
+            app.UseSwaggerUI(options =>
+            {
+                options.SwaggerEndpoint("/swagger/v1/swagger.json", "Tasker API v1");
+                options.RoutePrefix = "api";
+            });
             app.Run();
+        }
+
+        private static X509Certificate2 CreateSelfSignedCertificate()
+        {
+            var subject = new X500DistinguishedName("CN=WrongCert");
+
+            using (var rsa = RSA.Create(2048))
+            {
+                var request = new CertificateRequest(subject, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                request.CertificateExtensions.Add(
+                    new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment | X509KeyUsageFlags.DataEncipherment, false));
+                SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
+                builder.AddDnsName("WrongCert");
+                request.CertificateExtensions.Add(builder.Build());
+                request.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(
+                    new OidCollection { new Oid("1.3.6.1.5.5.7.3.1") },
+                    false));
+                var cert = request.CreateSelfSigned(new DateTimeOffset(DateTime.UtcNow.AddDays(-1)), new DateTimeOffset(DateTime.UtcNow.AddYears(1)));
+                return new X509Certificate2(cert.Export(X509ContentType.Pfx, "heslo"), "heslo", X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet);
+            }
         }
     }
 }

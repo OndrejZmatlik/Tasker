@@ -6,12 +6,21 @@ namespace Tasker.Web.Data.Services
     {
         public delegate Task Action2();
         public static event Action2 OnChange = null!;
+        public static event Action2 OnPrank = null!;
 
         public static async Task CallRequestRefresh()
         {
             if (OnChange != null)
             {
                 await OnChange.Invoke();
+            }
+        }
+
+        public static async Task CallPrank()
+        {
+            if (OnPrank != null)
+            {
+                await OnPrank.Invoke();
             }
         }
     }

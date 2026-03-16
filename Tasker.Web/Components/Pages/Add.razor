@@ -41,7 +41,7 @@
                     <MudSelectItem Value="@(subject)">@($"{subject.ShortName}{(subject.GroupId != Guid.Empty ? $" {subject.Group.Name}" : string.Empty)}") - <code>@subject.FullName</code></MudSelectItem>
                 }
             </MudSelect>
-
+            <MudCheckBox @bind-Value="inputModel.Important" Label="Vysoká priorita"></MudCheckBox>
             <MudButton Variant="Variant.Filled" Color="Color.Primary" ButtonType="ButtonType.Submit">
                 <MudIcon Icon="@Icons.Material.Filled.Save" /> @(IsEdit ? "Uložit" : "Přidat")
             </MudButton>
@@ -78,6 +78,7 @@
             inputModel.Name = task.Name;
             inputModel.Description = task.Description;
             inputModel.Deadline = task.Deadline.ToDateTime(TimeOnly.MinValue);
+            inputModel.Important = task.Important;
         }
         var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
         if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId))
@@ -95,6 +96,7 @@
         // newAssignment.TaskTypeId = Guid.Parse(inputModel.TaskTypeId);
         newAssignment.SubjectId = inputModel.SubjectId.Id;
         newAssignment.TaskTypeId = inputModel.TaskTypeId.Id;
+        newAssignment.Important = inputModel.Important;
         if (IsEdit)
         {
             newAssignment.Id = Id;
@@ -128,6 +130,9 @@
 
         [Required]
         public TaskType TaskTypeId { get; set; } = new();
+
+        [Required]
+        public bool Important { get; set; } = false;
 
     }
 }
