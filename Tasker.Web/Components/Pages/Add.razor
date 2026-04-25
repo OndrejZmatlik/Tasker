@@ -1,7 +1,8 @@
-﻿@page "/Add"
+@page "/Add"
 @page "/Edit/{Id:guid}"
 @using System.ComponentModel.DataAnnotations
 @using System.Security.Claims
+@using System.Globalization
 @using Tasker.Web.Data.Classes
 @using Tasker.Web.Data.Entities
 @using Tasker.Web.Data.Services
@@ -12,55 +13,324 @@
 @inject ISnackbar Snackbar
 @rendermode InteractiveServer
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <MudPaper Elevation="4" Class="p-4">
-        @if (IsEdit)
-        {
-            <MudText Typo="Typo.h4" GutterBottom="true">Upravit zadání</MudText>
+<PageTitle>@(IsEdit ? "Upravit zadání" : "Přidat zadání") – Tasker</PageTitle>
 
-        }
-        else
-        {
-            <MudText Typo="Typo.h4" GutterBottom="true">Přidat nové zadání</MudText>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 mb-8">
 
-        }
-        <EditForm Model="inputModel" OnValidSubmit="SubmitAssignment">
-            <DataAnnotationsValidator />
-            <ValidationSummary />
-
-            <MudTextField Variant="Variant.Outlined" @bind-Value="inputModel.Name" Label="Název zadání" Required="true" />
-            @* <MudTextField Variant="Variant.Outlined" @bind-Value="inputModel.Description" Label="Obsah zadání" Required="true" /> *@
-            @if (Loaded)
-            {
-
-                <MudExRichTextEdit @ref="@Editor"
-                                   Tools="HtmlEditor.All().ToArray()"
-                                   @bind-Value="inputModel.Description"
-                                   ReadOnly="false"
-                                   Height="444"
-                                   Class="my-2"
-                                   Placeholder="Obsah">
-                </MudExRichTextEdit>
-            }
-            <MudDatePicker Variant="Variant.Outlined" @bind-Date="inputModel.Deadline" Label="Termín" Required="true" />
-            <MudSelect Clearable Variant="Variant.Outlined" @bind-Value="inputModel.TaskTypeId" Label="Vyberte typ" Required="true">
-                @foreach (var subject in types)
+    @* ── Hlavička ── *@
+    <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-5" Wrap="Wrap.Wrap" Spacing="2">
+        <MudTooltip Text="Zpět na přehled">
+            <MudIconButton Icon="@Icons.Material.Filled.ArrowBack"
+                           Color="Color.Default"
+                           Variant="Variant.Outlined"
+                           Size="Size.Small"
+                           Href="/" />
+        </MudTooltip>
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4" Style="font-weight:700; letter-spacing:-0.5px;">
+                @if (IsEdit)
                 {
-                    <MudSelectItem Value="@subject">@(subject.Name)</MudSelectItem>
+                    <span>✏️ Upravit zadání</span>
                 }
-            </MudSelect>
-            <MudSelect Clearable Variant="Variant.Outlined" @bind-Value="inputModel.SubjectId" Label="Vyberte předmět" Required="true">
-                @foreach (var subject in subjects)
+                else
                 {
-                    <MudSelectItem Value="@(subject)">@($"{subject.ShortName}{(subject.GroupId != Guid.Empty ? $" {subject.Group.Name}" : string.Empty)}") - <code>@subject.FullName</code></MudSelectItem>
+                    <span>➕ Přidat nové zadání</span>
                 }
-            </MudSelect>
-            <MudCheckBox @bind-Value="inputModel.Important" Label="Vysoká priorita"></MudCheckBox>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" ButtonType="ButtonType.Submit">
-                <MudIcon Icon="@Icons.Material.Filled.Save" /> @(IsEdit ? "Uložit" : "Přidat")
-            </MudButton>
-        </EditForm>
-    </MudPaper>
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @if (IsEdit)
+                {
+                    <span>Upravte libovolné pole a uložte změny</span>
+                }
+                else
+                {
+                    <span>Vyplňte všechna povinná pole a potvrďte přidání</span>
+                }
+            </MudText>
+        </MudStack>
+    </MudStack>
+
+    <EditForm Model="inputModel" OnValidSubmit="SubmitAssignment">
+        <DataAnnotationsValidator />
+
+        <MudGrid Spacing="4">
+
+            @* ── Levý sloupec: formulář ── *@
+            <MudItem xs="12" md="7">
+                <MudStack Spacing="3">
+
+                    @* Sekce 1: Základní info *@
+                    <MudPaper Elevation="2" Class="pa-5 rounded-lg">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4" Spacing="2">
+                            <MudAvatar Color="Color.Primary" Size="Size.Small">1</MudAvatar>
+                            <MudText Typo="Typo.subtitle1" Style="font-weight:600;">Základní informace</MudText>
+                        </MudStack>
+
+                        <MudStack Spacing="3">
+                            <MudTextField Variant="Variant.Outlined"
+                                          @bind-Value="inputModel.Name"
+                                          Label="Název zadání"
+                                          Required="true"
+                                          Placeholder="např. Projekt z matematiky"
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.Title"
+                                          Immediate="true"
+                                          HelperText="Stručný název, který uvidí všichni" />
+
+                            <MudGrid Spacing="2">
+                                <MudItem xs="12" sm="6">
+                                    <MudSelect Clearable
+                                               Variant="Variant.Outlined"
+                                               @bind-Value="inputModel.SubjectId"
+                                               Label="Předmět"
+                                               Required="true"
+                                               Adornment="Adornment.Start"
+                                               AdornmentIcon="@Icons.Material.Filled.School">
+                                        @foreach (var subject in subjects)
+                                        {
+                                            <MudSelectItem Value="@subject">
+                                                @($"{subject.ShortName}{(subject.GroupId != Guid.Empty ? $" {subject.Group.Name}" : string.Empty)}")
+                                                &nbsp;<MudText Typo="Typo.caption" Color="Color.Secondary" Style="display:inline;">@subject.FullName</MudText>
+                                            </MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                </MudItem>
+                                <MudItem xs="12" sm="6">
+                                    <MudSelect Clearable
+                                               Variant="Variant.Outlined"
+                                               @bind-Value="inputModel.TaskTypeId"
+                                               Label="Typ zadání"
+                                               Required="true"
+                                               Adornment="Adornment.Start"
+                                               AdornmentIcon="@Icons.Material.Filled.Label">
+                                        @foreach (var type in types)
+                                        {
+                                            <MudSelectItem Value="@type">@type.Name</MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                </MudItem>
+                            </MudGrid>
+
+                            <MudDatePicker Variant="Variant.Outlined"
+                                           @bind-Date="inputModel.Deadline"
+                                           Label="Termín odevzdání"
+                                           Required="true"
+                                           Adornment="Adornment.Start"
+                                           AdornmentIcon="@Icons.Material.Filled.CalendarToday"
+                                           MinDate="DateTime.Today"
+                                           HelperText="Datum, do kdy musí být splněno" />
+                        </MudStack>
+                    </MudPaper>
+
+                    @* Sekce 2: Obsah *@
+                    <MudPaper Elevation="2" Class="pa-5 rounded-lg">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4" Spacing="2">
+                            <MudAvatar Color="Color.Primary" Size="Size.Small">2</MudAvatar>
+                            <MudText Typo="Typo.subtitle1" Style="font-weight:600;">Obsah zadání</MudText>
+                        </MudStack>
+
+                        @if (!Loaded)
+                        {
+                            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="200px" Class="rounded" />
+                        }
+                        else
+                        {
+                            <MudExRichTextEdit @ref="@Editor"
+                                               Tools="HtmlEditor.All().ToArray()"
+                                               @bind-Value="inputModel.Description"
+                                               ReadOnly="false"
+                                               Height="320"
+                                               Placeholder="Popište zadání podrobně – co je potřeba udělat, jaké jsou požadavky…" />
+                        }
+                    </MudPaper>
+
+                    @* Sekce 3: Priorita *@
+                    <MudPaper Elevation="2" Class="pa-5 rounded-lg">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-3" Spacing="2">
+                            <MudAvatar Color="Color.Primary" Size="Size.Small">3</MudAvatar>
+                            <MudText Typo="Typo.subtitle1" Style="font-weight:600;">Priorita</MudText>
+                        </MudStack>
+
+                        <MudSelect T="TaskPriority"
+                                   @bind-Value="inputModel.Priority"
+                                   Variant="Variant.Outlined"
+                                   Label="Stupeň priority"
+                                   Adornment="Adornment.Start"
+                                   AdornmentIcon="@Icons.Material.Filled.Flag"
+                                   HelperText="Určuje vizuální zvýraznění a pořadí důležitosti">
+                            <MudSelectItem Value="TaskPriority.Normal">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                    <MudIcon Icon="@Icons.Material.Outlined.Flag" Color="Color.Default" Size="Size.Small" />
+                                    <span>Normální</span>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">– bez zvýraznění</MudText>
+                                </MudStack>
+                            </MudSelectItem>
+                            <MudSelectItem Value="TaskPriority.Low">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                    <MudIcon Icon="@Icons.Material.Filled.ArrowDownward" Color="Color.Info" Size="Size.Small" />
+                                    <span>Nízká</span>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">– modrý akcent</MudText>
+                                </MudStack>
+                            </MudSelectItem>
+                            <MudSelectItem Value="TaskPriority.Medium">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                    <MudIcon Icon="@Icons.Material.Filled.Remove" Color="Color.Success" Size="Size.Small" />
+                                    <span>Střední</span>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">– zelený akcent</MudText>
+                                </MudStack>
+                            </MudSelectItem>
+                            <MudSelectItem Value="TaskPriority.High">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                    <MudIcon Icon="@Icons.Material.Filled.ArrowUpward" Color="Color.Warning" Size="Size.Small" />
+                                    <span>Vysoká</span>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">– oranžový akcent</MudText>
+                                </MudStack>
+                            </MudSelectItem>
+                            <MudSelectItem Value="TaskPriority.Critical">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                    <MudIcon Icon="@Icons.Material.Filled.PriorityHigh" Color="Color.Error" Size="Size.Small" />
+                                    <span>Kritická</span>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">– červený pulzující efekt</MudText>
+                                </MudStack>
+                            </MudSelectItem>
+                        </MudSelect>
+
+                        @* Barevný indikátor vybrané priority *@
+                        <MudPaper Outlined="true" Class="pa-3 mt-3 rounded-lg d-flex align-center" Elevation="0"
+                                  Style="@GetPriorityPanelStyle(inputModel.Priority)">
+                            <MudIcon Icon="@GetPriorityIcon(inputModel.Priority)"
+                                     Color="@GetPriorityColor(inputModel.Priority)" Class="me-2" />
+                            <MudText Typo="Typo.body2" Style="font-weight:500;">
+                                @GetPriorityLabel(inputModel.Priority)
+                            </MudText>
+                        </MudPaper>
+                    </MudPaper>
+
+                </MudStack>
+            </MudItem>
+
+            @* ── Pravý sloupec: náhled + akce ── *@
+            <MudItem xs="12" md="5">
+                <MudStack Spacing="3" Style="position: sticky; top: 80px;">
+
+                    @* Náhled karty *@
+                    <MudPaper Elevation="2" Class="pa-5 rounded-lg">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-3" Spacing="1">
+                            <MudIcon Icon="@Icons.Material.Outlined.Visibility" Size="Size.Small" Color="Color.Secondary" />
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Style="font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">
+                                Náhled karty
+                            </MudText>
+                        </MudStack>
+
+                        <MudCard Elevation="3" Class="rounded-lg"
+                                 Style="@GetPreviewBorderStyle()">
+                            <MudCardHeader Style="padding-bottom:8px;">
+                                <CardHeaderAvatar>
+                                    <MudAvatar Color="@GetPreviewAvatarColor()" Size="Size.Medium"
+                                               Style="font-size:0.75rem; font-weight:700;">
+                                        @GetPreviewAvatarText()
+                                    </MudAvatar>
+                                </CardHeaderAvatar>
+                                <CardHeaderContent>
+                                    <MudStack Spacing="0">
+                                        <MudText Typo="Typo.subtitle2" Style="font-weight:600; line-height:1.2;">
+                                            @(inputModel.SubjectId?.ShortName ?? "Předmět")
+                                            @if (inputModel.SubjectId?.GroupId != null && inputModel.SubjectId.GroupId != Guid.Empty)
+                                            {
+                                                <span> @inputModel.SubjectId.Group?.Name</span>
+                                            }
+                                        </MudText>
+                                        <MudChip T="string"
+                                                 Color="Color.Primary"
+                                                 Variant="Variant.Filled"
+                                                 Size="Size.Small"
+                                                 Label="true"
+                                                 Style="height:20px; font-size:0.68rem; margin:2px 0 0 0;">
+                                            @(inputModel.TaskTypeId?.Name ?? "Typ")
+                                        </MudChip>
+                                    </MudStack>
+                                </CardHeaderContent>
+                                <CardHeaderActions>
+                                    @if (inputModel.Priority != TaskPriority.Normal)
+                                    {
+                                        <MudTooltip Text="@GetPriorityLabel(inputModel.Priority)">
+                                            <MudIcon Icon="@GetPriorityIcon(inputModel.Priority)"
+                                                     Color="@GetPriorityColor(inputModel.Priority)"
+                                                     Size="Size.Small" />
+                                        </MudTooltip>
+                                    }
+                                </CardHeaderActions>
+                            </MudCardHeader>
+                            <MudCardContent Style="padding-top:0; padding-bottom:8px;">
+                                <MudText Typo="Typo.h6" Style="font-weight:600; margin-bottom:6px; line-height:1.3; min-height:28px;">
+                                    @(string.IsNullOrWhiteSpace(inputModel.Name) ? "Název zadání…" : inputModel.Name)
+                                </MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary" Style="min-height:20px;">
+                                    @if (string.IsNullOrWhiteSpace(inputModel.Description))
+                                    {
+                                        <span style="opacity:0.5;">Obsah zadání se zobrazí zde…</span>
+                                    }
+                                    else
+                                    {
+                                        @((MarkupString)inputModel.Description)
+                                    }
+                                </MudText>
+                            </MudCardContent>
+                            <MudCardActions Style="padding-top:0;">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Style="flex:1;">
+                                    <MudIcon Icon="@Icons.Material.Outlined.CalendarToday"
+                                             Size="Size.Small" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.caption" Style="font-weight:600;">
+                                        @(inputModel.Deadline.HasValue
+                                            ? inputModel.Deadline.Value.ToString("d. M. yyyy", CultureInfo.GetCultureInfo("cs-CZ"))
+                                            : "Datum nezvoleno")
+                                    </MudText>
+                                </MudStack>
+                            </MudCardActions>
+                        </MudCard>
+                    </MudPaper>
+
+                    @* Akční tlačítka *@
+                    <MudPaper Elevation="2" Class="pa-4 rounded-lg">
+                        <MudStack Spacing="2">
+                            <MudButton FullWidth="true"
+                                       Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       Size="Size.Large"
+                                       ButtonType="ButtonType.Submit"
+                                       StartIcon="@(IsEdit ? Icons.Material.Filled.Save : Icons.Material.Filled.Add)"
+                                       Disabled="Submitting"
+                                       Style="font-weight:600; letter-spacing:0.03em;">
+                                @if (Submitting)
+                                {
+                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
+                                    <span>Ukládám…</span>
+                                }
+                                else
+                                {
+                                    <span>@(IsEdit ? "Uložit změny" : "Přidat zadání")</span>
+                                }
+                            </MudButton>
+
+                            <MudButton FullWidth="true"
+                                       Variant="Variant.Outlined"
+                                       Color="Color.Default"
+                                       Href="/"
+                                       StartIcon="@Icons.Material.Filled.Close">
+                                Zrušit
+                            </MudButton>
+                        </MudStack>
+                    </MudPaper>
+
+                    @* Validační chyby *@
+                    <ValidationSummary />
+
+                </MudStack>
+            </MudItem>
+
+        </MudGrid>
+    </EditForm>
+
 </MudContainer>
 
 @code {
@@ -72,6 +342,81 @@
     private bool IsEdit => Id != Guid.Empty;
     private MudExRichTextEdit? Editor { get; set; }
     private bool Loaded = false;
+    private bool Submitting = false;
+
+    // ── Náhled helpers ──────────────────────────────────────────────────────────
+
+    private string GetPreviewAvatarText()
+    {
+        var name = inputModel.SubjectId?.ShortName ?? "?";
+        return name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
+    }
+
+    private Color GetPreviewAvatarColor()
+    {
+        var colors = new[] { Color.Primary, Color.Secondary, Color.Info, Color.Success, Color.Warning };
+        var name = inputModel.SubjectId?.ShortName;
+        if (string.IsNullOrEmpty(name)) return Color.Primary;
+        return colors[name[0] % colors.Length];
+    }
+
+    private string GetPreviewBorderStyle()
+    {
+        var priorityBorder = inputModel.Priority switch
+        {
+            TaskPriority.Critical => "border-top: 3px solid var(--mud-palette-error);",
+            TaskPriority.High     => "border-top: 3px solid var(--mud-palette-warning);",
+            TaskPriority.Medium   => "border-top: 3px solid var(--mud-palette-success);",
+            TaskPriority.Low      => "border-top: 3px solid var(--mud-palette-info);",
+            _                     => null
+        };
+        if (priorityBorder is not null) return priorityBorder;
+        if (inputModel.Deadline.HasValue)
+        {
+            var daysLeft = (inputModel.Deadline.Value.Date - DateTime.Now.Date).TotalDays;
+            if (daysLeft <= 0) return "border-top: 3px solid var(--mud-palette-error);";
+            if (daysLeft <= 3) return "border-top: 3px solid var(--mud-palette-warning);";
+        }
+        return "border-top: 3px solid var(--mud-palette-primary);";
+    }
+
+    private static string GetPriorityLabel(TaskPriority p) => p switch
+    {
+        TaskPriority.Critical => "🔴 Kritická priorita – červený pulzující efekt",
+        TaskPriority.High     => "🟠 Vysoká priorita – oranžový akcent",
+        TaskPriority.Medium   => "🟢 Střední priorita – zelený akcent",
+        TaskPriority.Low      => "🔵 Nízká priorita – modrý akcent",
+        _                     => "⚪ Normální – bez zvýraznění"
+    };
+
+    private static string GetPriorityIcon(TaskPriority p) => p switch
+    {
+        TaskPriority.Critical => Icons.Material.Filled.PriorityHigh,
+        TaskPriority.High     => Icons.Material.Filled.ArrowUpward,
+        TaskPriority.Medium   => Icons.Material.Filled.Remove,
+        TaskPriority.Low      => Icons.Material.Filled.ArrowDownward,
+        _                     => Icons.Material.Outlined.Flag
+    };
+
+    private static Color GetPriorityColor(TaskPriority p) => p switch
+    {
+        TaskPriority.Critical => Color.Error,
+        TaskPriority.High     => Color.Warning,
+        TaskPriority.Medium   => Color.Success,
+        TaskPriority.Low      => Color.Info,
+        _                     => Color.Default
+    };
+
+    private static string GetPriorityPanelStyle(TaskPriority p) => p switch
+    {
+        TaskPriority.Critical => "border-color: var(--mud-palette-error) !important; background: rgba(255,63,95,0.07);",
+        TaskPriority.High     => "border-color: var(--mud-palette-warning) !important; background: rgba(255,181,69,0.07);",
+        TaskPriority.Medium   => "border-color: var(--mud-palette-success) !important; background: rgba(61,203,108,0.07);",
+        TaskPriority.Low      => "border-color: var(--mud-palette-info) !important; background: rgba(74,134,255,0.07);",
+        _                     => ""
+    };
+
+    // ── Lifecycle ────────────────────────────────────────────────────────────────
 
     protected override async Task OnInitializedAsync()
     {
@@ -80,6 +425,7 @@
         types = await TasksService.GetAssignmentTypesAsync();
         var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
+
         if (IsEdit)
         {
             var task = await TasksService.GetSchoolTaskAsync(Id);
@@ -88,15 +434,14 @@
                 NavigationManager.NavigateTo("/");
                 return;
             }
-            // inputModel.SubjectId = task.SubjectId.ToString();
-            // inputModel.TaskTypeId = task.TaskTypeId.ToString();
             inputModel.SubjectId = task.Subject;
             inputModel.TaskTypeId = task.TaskType;
             inputModel.Name = task.Name;
             inputModel.Description = task.Description;
             inputModel.Deadline = task.Deadline.ToDateTime(TimeOnly.MinValue);
-            inputModel.Important = task.Important;
+            inputModel.Priority = task.Priority;
         }
+
         var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
         if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId))
         {
@@ -107,14 +452,16 @@
 
     private async Task SubmitAssignment()
     {
+        Submitting = true;
         newAssignment.Name = inputModel.Name;
         newAssignment.Description = inputModel.Description;
-        newAssignment.Deadline = inputModel.Deadline.HasValue ? DateOnly.FromDateTime(inputModel.Deadline.Value) : DateOnly.FromDateTime(DateTime.Now);
-        // newAssignment.SubjectId = Guid.Parse(inputModel.SubjectId);
-        // newAssignment.TaskTypeId = Guid.Parse(inputModel.TaskTypeId);
+        newAssignment.Deadline = inputModel.Deadline.HasValue
+            ? DateOnly.FromDateTime(inputModel.Deadline.Value)
+            : DateOnly.FromDateTime(DateTime.Now);
         newAssignment.SubjectId = inputModel.SubjectId.Id;
         newAssignment.TaskTypeId = inputModel.TaskTypeId.Id;
-        newAssignment.Important = inputModel.Important;
+        newAssignment.Priority = inputModel.Priority;
+
         if (IsEdit)
         {
             newAssignment.Id = Id;
@@ -124,6 +471,7 @@
             NavigationManager.NavigateTo("/");
             return;
         }
+
         await TasksService.AddTaskAsync(newAssignment);
         Snackbar.Add("Zadání bylo úspěšně přidáno", Severity.Success);
         await Refresh.CallRequestRefresh();
@@ -149,8 +497,6 @@
         [Required]
         public TaskType TaskTypeId { get; set; } = new();
 
-        [Required]
-        public bool Important { get; set; } = false;
-
+        public TaskPriority Priority { get; set; } = TaskPriority.Normal;
     }
 }

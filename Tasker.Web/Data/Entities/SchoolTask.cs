@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Tasker.Web.Data.Entities
@@ -33,7 +33,13 @@ namespace Tasker.Web.Data.Entities
         public Subject Subject { get; set; } = null!;
 
         public bool Deleted { get; set; } = false;
-        public bool Important { get; set; } = false;
+
+        /// <summary>Stupeň priority úkolu.</summary>
+        public TaskPriority Priority { get; set; } = TaskPriority.Normal;
+
+        /// <summary>Zpětná kompatibilita – true pokud je priorita High nebo Critical.</summary>
+        [NotMapped]
+        public bool Important => Priority >= TaskPriority.High;
 
     }
 }
