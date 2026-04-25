@@ -2,8 +2,10 @@
 @page "/Edit/{Id:guid}"
 @using System.ComponentModel.DataAnnotations
 @using System.Security.Claims
+@using Tasker.Web.Data.Classes
 @using Tasker.Web.Data.Entities
 @using Tasker.Web.Data.Services
+@using MudExRichTextEditor
 @inject TasksService TasksService
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider _authenticationStateProvider
@@ -27,7 +29,19 @@
             <ValidationSummary />
 
             <MudTextField Variant="Variant.Outlined" @bind-Value="inputModel.Name" Label="Název zadání" Required="true" />
-            <MudTextField Variant="Variant.Outlined" @bind-Value="inputModel.Description" Label="Obsah zadání" Required="true" />
+            @* <MudTextField Variant="Variant.Outlined" @bind-Value="inputModel.Description" Label="Obsah zadání" Required="true" /> *@
+            @if (Loaded)
+            {
+
+                <MudExRichTextEdit @ref="@Editor"
+                                   Tools="HtmlEditor.All().ToArray()"
+                                   @bind-Value="inputModel.Description"
+                                   ReadOnly="false"
+                                   Height="444"
+                                   Class="my-2"
+                                   Placeholder="Obsah">
+                </MudExRichTextEdit>
+            }
             <MudDatePicker Variant="Variant.Outlined" @bind-Date="inputModel.Deadline" Label="Termín" Required="true" />
             <MudSelect Clearable Variant="Variant.Outlined" @bind-Value="inputModel.TaskTypeId" Label="Vyberte typ" Required="true">
                 @foreach (var subject in types)
@@ -56,9 +70,12 @@
     private Guid UserId;
     [Parameter] public Guid Id { get; set; }
     private bool IsEdit => Id != Guid.Empty;
+    private MudExRichTextEdit? Editor { get; set; }
+    private bool Loaded = false;
 
     protected override async Task OnInitializedAsync()
     {
+        Loaded = false;
         subjects = await TasksService.GetSubjectsAsync();
         types = await TasksService.GetAssignmentTypesAsync();
         var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
@@ -85,6 +102,7 @@
         {
             UserId = userId;
         }
+        Loaded = true;
     }
 
     private async Task SubmitAssignment()
