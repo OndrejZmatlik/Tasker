@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using Ganss.Xss
 @using Humanizer
 @using Microsoft.AspNetCore.Authorization
 @using System.Globalization
@@ -71,7 +72,7 @@
                     @context.Name
                 </MudTd>
                 <MudTd DataLabel="Zadání">
-                    @context.Description
+                    @((MarkupString)sanitizer.Sanitize(context.Description))
 
                 </MudTd>
                 <MudTd DataLabel="Čas splnění">
@@ -107,6 +108,7 @@
     private bool IsLogin { get; set; } = false;
     private DateTime? DateFilter { get; set; }
     private bool Loading { get; set; } = false;
+    private HtmlSanitizer sanitizer = new();
 
     private async Task InvokePrankAdmin()
     {

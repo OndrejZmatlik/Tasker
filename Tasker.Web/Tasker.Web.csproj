@@ -14,6 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="HtmlSanitizer" Version="9.0.892" />
     <PackageReference Include="Humanizer.Core.cs" Version="3.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="10.0.0" />
@@ -31,6 +32,7 @@
     <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="10.1.5" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="10.1.5" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.1.5" />
+	  <PackageReference Include="MudExRichTextEditor" Version="2.0.2" />
   </ItemGroup>
 
 </Project>
