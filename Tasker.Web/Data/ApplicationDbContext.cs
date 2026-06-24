@@ -13,5 +13,17 @@ namespace Tasker.Web.Data
         public DbSet<Subject> Subjects => Set<Subject>();
         public DbSet<TaskType> TaskTypes => Set<TaskType>();
 
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+
+            builder.Entity<SchoolTask>()
+                .HasMany(t => t.Subjects)
+                .WithMany(s => s.Tasks)
+                .UsingEntity("TaskSubjects",
+                    l => l.HasOne(typeof(Subject)).WithMany().HasForeignKey("SubjectId").HasPrincipalKey(nameof(Subject.Id)),
+                    r => r.HasOne(typeof(SchoolTask)).WithMany().HasForeignKey("TaskId").HasPrincipalKey(nameof(SchoolTask.Id))
+                );
+        }
     }
 }

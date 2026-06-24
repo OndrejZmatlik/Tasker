@@ -23,6 +23,7 @@
         {
             <MudText Typo="Typo.h4" GutterBottom="true">Přidat nové zadání</MudText>
 
+<<<<<<< Updated upstream
         }
         <EditForm Model="inputModel" OnValidSubmit="SubmitAssignment">
             <DataAnnotationsValidator />
@@ -61,21 +62,331 @@
             </MudButton>
         </EditForm>
     </MudPaper>
+=======
+    @* ── Hlavička ── *@
+    <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-5" Wrap="Wrap.Wrap" Spacing="2">
+        <MudTooltip Text="Zpět na přehled">
+            <MudIconButton Icon="@Icons.Material.Filled.ArrowBack"
+                           Color="Color.Default"
+                           Variant="Variant.Outlined"
+                           Size="Size.Small"
+                           Href="/" />
+        </MudTooltip>
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4" Style="font-weight:700; letter-spacing:-0.5px;">
+                @if (IsEdit) { <span>✏️ Upravit zadání</span> }
+                else { <span>➕ Přidat nové zadání</span> }
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @if (IsEdit) { <span>Upravte libovolné pole a uložte změny</span> }
+                else { <span>Vyplňte všechna povinná pole a potvrďte přidání</span> }
+            </MudText>
+        </MudStack>
+    </MudStack>
+
+    <EditForm Model="inputModel" OnValidSubmit="SubmitAssignment">
+        <DataAnnotationsValidator />
+
+        <MudGrid Spacing="4">
+
+            @* ── Levý sloupec: formulář ── *@
+            <MudItem xs="12" md="8">
+                <MudStack Spacing="3">
+
+                    @* Sekce 1: Základní info *@
+                    <MudPaper Elevation="2" Class="pa-5 rounded-lg">
+                        <MudText Typo="Typo.subtitle1" Style="font-weight:600;" Class="mb-3">
+                            📝 Základní informace
+                        </MudText>
+
+                        <MudTextField Variant="Variant.Outlined"
+                                      @bind-Value="inputModel.Name"
+                                      Label="Název zadání"
+                                      Required="true"
+                                      Placeholder="např. Projekt z matematiky"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Title"
+                                      Immediate="true"
+                                      Class="mb-3" />
+
+                        <MudGrid Spacing="2" Class="mb-3">
+                            <MudItem xs="12" sm="8">
+                                <MudSelect T="Subject"
+                                           MultiSelection="true"
+                                           @bind-SelectedValues="inputModel.Subjects"
+                                           Label="Předměty"
+                                           Variant="Variant.Outlined"
+                                           Adornment="Adornment.Start"
+                                           AdornmentIcon="@Icons.Material.Filled.School"
+                                           MultiSelectionTextFunc="@(items => string.Join(", ", items))"
+                                           HelperText="Lze vybrat více předmětů">
+                                    @foreach (var subject in subjects)
+                                    {
+                                        <MudSelectItem T="Subject" Value="@subject">
+                                            @subject.TitleShort
+                                        </MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+                            <MudItem xs="12" sm="4">
+                                <MudSelect T="TaskType"
+                                           @bind-Value="inputModel.TaskType"
+                                           Clearable
+                                           Label="Typ zadání"
+                                           Required="true"
+                                           Variant="Variant.Outlined"
+                                           Adornment="Adornment.Start"
+                                           AdornmentIcon="@Icons.Material.Filled.Label">
+                                    @foreach (var type in types)
+                                    {
+                                        <MudSelectItem T="TaskType" Value="@type">@type.Name</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+                        </MudGrid>
+
+                        @* Datum rozsah *@
+                        <MudGrid Spacing="2" Class="mb-3">
+                            <MudItem xs="12" sm="6">
+                                <MudDatePicker Variant="Variant.Outlined"
+                                               @bind-Date="inputModel.DeadlineFrom"
+                                               Label="Datum od (volitelné)"
+                                               Clearable="true"
+                                               Adornment="Adornment.Start"
+                                               AdornmentIcon="@Icons.Material.Filled.CalendarToday"
+                                               HelperText="Vyplňte, pokud má zadání více dní" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudDatePicker Variant="Variant.Outlined"
+                                               @bind-Date="inputModel.DeadlineTo"
+                                               Label="Termín / Datum do"
+                                               Required="true"
+                                               Adornment="Adornment.Start"
+                                               AdornmentIcon="@Icons.Material.Filled.Event" />
+                            </MudItem>
+                        </MudGrid>
+
+                        <MudSelect T="TaskPriority"
+                                   @bind-Value="inputModel.Priority"
+                                   Variant="Variant.Outlined"
+                                   Label="Priorita"
+                                   Adornment="Adornment.Start"
+                                   AdornmentIcon="@Icons.Material.Filled.Flag">
+                            <MudSelectItem Value="TaskPriority.Normal">⚪ Normální</MudSelectItem>
+                            <MudSelectItem Value="TaskPriority.Low">🔵 Nízká</MudSelectItem>
+                            <MudSelectItem Value="TaskPriority.Medium">🟢 Střední</MudSelectItem>
+                            <MudSelectItem Value="TaskPriority.High">🟠 Vysoká</MudSelectItem>
+                            <MudSelectItem Value="TaskPriority.Critical">🔴 Kritická</MudSelectItem>
+                        </MudSelect>
+                    </MudPaper>
+
+                    @* Sekce 2: Obsah *@
+                    <MudPaper Elevation="2" Class="pa-5 rounded-lg">
+                        <MudText Typo="Typo.subtitle1" Style="font-weight:600;" Class="mb-3">
+                            📄 Obsah zadání
+                        </MudText>
+
+                        @if (!loaded)
+                        {
+                            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="200px" Class="rounded" />
+                        }
+                        else
+                        {
+                            <MudExRichTextEdit @ref="editor"
+                                               Tools="HtmlEditor.All().ToArray()"
+                                               @bind-Value="inputModel.Description"
+                                               ReadOnly="false"
+                                               Height="280"
+                                               Placeholder="Popište zadání podrobně…" />
+                        }
+                    </MudPaper>
+
+                </MudStack>
+            </MudItem>
+
+            @* ── Pravý sloupec: akce + náhled ── *@
+            <MudItem xs="12" md="4">
+                <MudStack Spacing="3" Style="position: sticky; top: 80px;">
+
+                    @* Akční tlačítka *@
+                    <MudPaper Elevation="2" Class="pa-4 rounded-lg">
+                        <MudStack Spacing="2">
+                            <MudButton FullWidth="true"
+                                       Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       Size="Size.Large"
+                                       ButtonType="ButtonType.Submit"
+                                       StartIcon="@(IsEdit ? Icons.Material.Filled.Save : Icons.Material.Filled.Add)"
+                                       Disabled="Submitting"
+                                       Style="font-weight:600;">
+                                @if (Submitting)
+                                {
+                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
+                                    <span>Ukládám…</span>
+                                }
+                                else
+                                {
+                                    <span>@(IsEdit ? "Uložit změny" : "Přidat zadání")</span>
+                                }
+                            </MudButton>
+                            <MudButton FullWidth="true"
+                                       Variant="Variant.Outlined"
+                                       Color="Color.Default"
+                                       Href="/"
+                                       StartIcon="@Icons.Material.Filled.Close">
+                                Zrušit
+                            </MudButton>
+                        </MudStack>
+                    </MudPaper>
+
+                    @* Náhled zadání *@
+                    <MudPaper Elevation="2" Class="rounded-lg overflow-hidden">
+                        <div style="padding: 12px 16px 8px; border-bottom: 1px solid var(--mud-palette-lines-default);">
+                            <MudText Typo="Typo.caption" Style="font-weight:600; text-transform:uppercase; letter-spacing:.05em; opacity:.6;">
+                                👁️ Náhled
+                            </MudText>
+                        </div>
+                        <MudPaper Elevation="0" Class="pa-4" Style="@GetPreviewBorderStyle()">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Wrap="Wrap.Wrap" Class="mb-2">
+                                @if (inputModel.Subjects.Any())
+                                {
+                                    @foreach (var s in inputModel.Subjects.Take(3))
+                                    {
+                                        <MudAvatar Color="@GetSubjectAvatarColor(s.ShortName)" Size="Size.Small"
+                                                   Style="font-size:0.6rem; font-weight:700; width:26px; height:26px;">
+                                            @(s.ShortName.Length >= 2 ? s.ShortName[..2].ToUpper() : s.ShortName.ToUpper())
+                                        </MudAvatar>
+                                    }
+                                    <MudText Typo="Typo.subtitle2" Style="font-weight:600;">
+                                        @string.Join(", ", inputModel.Subjects.Select(s => s.TitleShort))
+                                    </MudText>
+                                }
+                                else
+                                {
+                                    <MudText Typo="Typo.subtitle2" Style="font-weight:600; opacity:0.35;">Předmět</MudText>
+                                }
+                                @if (inputModel.TaskType is not null)
+                                {
+                                    <MudChip T="string" Color="Color.Primary" Variant="Variant.Filled"
+                                             Size="Size.Small" Label="true"
+                                             Style="height:20px; font-size:0.68rem;">
+                                        @inputModel.TaskType.Name
+                                    </MudChip>
+                                }
+                                @if (inputModel.Priority != TaskPriority.Normal)
+                                {
+                                    <MudIcon Icon="@GetPriorityIcon(inputModel.Priority)"
+                                             Color="@GetPriorityColor(inputModel.Priority)"
+                                             Size="Size.Small" />
+                                }
+                            </MudStack>
+                            <MudText Typo="Typo.h6" Style="font-weight:600; margin-bottom:6px;">
+                                @(string.IsNullOrWhiteSpace(inputModel.Name) ? "Název zadání…" : inputModel.Name)
+                            </MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary"
+                                     Style="min-height:40px; max-height:200px; overflow-y:auto;">
+                                @if (string.IsNullOrWhiteSpace(inputModel.Description))
+                                {
+                                    <span style="opacity:0.4;">Obsah zadání se zobrazí zde…</span>
+                                }
+                                else
+                                {
+                                    @((MarkupString)inputModel.Description)
+                                }
+                            </MudText>
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mt-3">
+                                <MudIcon Icon="@Icons.Material.Outlined.CalendarToday" Size="Size.Small" Color="Color.Secondary" />
+                                <MudText Typo="Typo.caption" Style="font-weight:600;">
+                                    @if (inputModel.DeadlineFrom.HasValue)
+                                    {
+                                        @inputModel.DeadlineFrom.Value.ToString("d. M. yyyy", CultureInfo.GetCultureInfo("cs-CZ"))
+                                        <span style="opacity:0.6;"> – </span>
+                                    }
+                                    @(inputModel.DeadlineTo.HasValue
+                                        ? inputModel.DeadlineTo.Value.ToString("d. M. yyyy", CultureInfo.GetCultureInfo("cs-CZ"))
+                                        : "Datum nezvoleno")
+                                </MudText>
+                            </MudStack>
+                        </MudPaper>
+                    </MudPaper>
+
+                    <ValidationSummary />
+                </MudStack>
+            </MudItem>
+
+        </MudGrid>
+    </EditForm>
+
+>>>>>>> Stashed changes
 </MudContainer>
 
 @code {
     private SchoolTask newAssignment = new();
-    private IEnumerable<Subject> subjects = new List<Subject>();
-    private IEnumerable<TaskType> types = new List<TaskType>();
+    private IEnumerable<Subject> subjects = [];
+    private IEnumerable<TaskType> types = [];
     private Guid UserId;
     [Parameter] public Guid Id { get; set; }
     private bool IsEdit => Id != Guid.Empty;
+<<<<<<< Updated upstream
     private MudExRichTextEdit? Editor { get; set; }
     private bool Loaded = false;
+=======
+    private bool Submitting = false;
+    private bool loaded = false;
+    private MudExRichTextEdit? editor;
+
+    // ── Helpers ─────────────────────────────────────────────────────────────────
+
+    private static Color GetSubjectAvatarColor(string shortName)
+    {
+        var colors = new[] { Color.Primary, Color.Secondary, Color.Info, Color.Success, Color.Warning };
+        return colors[shortName.Length > 0 ? shortName[0] % colors.Length : 0];
+    }
+
+    private string GetPreviewBorderStyle()
+    {
+        var priorityBorder = inputModel.Priority switch
+        {
+            TaskPriority.Critical => "border-top: 3px solid var(--mud-palette-error);",
+            TaskPriority.High     => "border-top: 3px solid var(--mud-palette-warning);",
+            TaskPriority.Medium   => "border-top: 3px solid var(--mud-palette-success);",
+            TaskPriority.Low      => "border-top: 3px solid var(--mud-palette-info);",
+            _                     => null
+        };
+        if (priorityBorder is not null) return priorityBorder;
+        if (inputModel.DeadlineTo.HasValue)
+        {
+            var daysLeft = (inputModel.DeadlineTo.Value.Date - DateTime.Now.Date).TotalDays;
+            if (daysLeft <= 0) return "border-top: 3px solid var(--mud-palette-error);";
+            if (daysLeft <= 3) return "border-top: 3px solid var(--mud-palette-warning);";
+        }
+        return "border-top: 3px solid var(--mud-palette-primary);";
+    }
+
+    private static string GetPriorityIcon(TaskPriority p) => p switch
+    {
+        TaskPriority.Critical => Icons.Material.Filled.PriorityHigh,
+        TaskPriority.High     => Icons.Material.Filled.ArrowUpward,
+        TaskPriority.Medium   => Icons.Material.Filled.Remove,
+        TaskPriority.Low      => Icons.Material.Filled.ArrowDownward,
+        _                     => Icons.Material.Outlined.Flag
+    };
+
+    private static Color GetPriorityColor(TaskPriority p) => p switch
+    {
+        TaskPriority.Critical => Color.Error,
+        TaskPriority.High     => Color.Warning,
+        TaskPriority.Medium   => Color.Success,
+        TaskPriority.Low      => Color.Info,
+        _                     => Color.Default
+    };
+
+    // ── Lifecycle ────────────────────────────────────────────────────────────────
+>>>>>>> Stashed changes
 
     protected override async Task OnInitializedAsync()
     {
-        Loaded = false;
+        loaded = false;
         subjects = await TasksService.GetSubjectsAsync();
         types = await TasksService.GetAssignmentTypesAsync();
         var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
@@ -88,6 +399,7 @@
                 NavigationManager.NavigateTo("/");
                 return;
             }
+<<<<<<< Updated upstream
             // inputModel.SubjectId = task.SubjectId.ToString();
             // inputModel.TaskTypeId = task.TaskTypeId.ToString();
             inputModel.SubjectId = task.Subject;
@@ -96,17 +408,28 @@
             inputModel.Description = task.Description;
             inputModel.Deadline = task.Deadline.ToDateTime(TimeOnly.MinValue);
             inputModel.Important = task.Important;
+=======
+            // Match against loaded subjects so equality (by Id) works in MudSelect
+            inputModel.Subjects = subjects.Where(s => task.Subjects.Any(ts => ts.Id == s.Id)).ToList();
+            inputModel.TaskType = types.FirstOrDefault(t => t.Id == task.TaskTypeId);
+            inputModel.Name = task.Name;
+            inputModel.Description = task.Description;
+            inputModel.DeadlineFrom = task.DeadlineFrom.HasValue
+                ? task.DeadlineFrom.Value.ToDateTime(TimeOnly.MinValue)
+                : null;
+            inputModel.DeadlineTo = task.DeadlineTo.ToDateTime(TimeOnly.MinValue);
+            inputModel.Priority = task.Priority;
+>>>>>>> Stashed changes
         }
         var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
         if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId))
-        {
             UserId = userId;
-        }
-        Loaded = true;
+        loaded = true;
     }
 
     private async Task SubmitAssignment()
     {
+<<<<<<< Updated upstream
         newAssignment.Name = inputModel.Name;
         newAssignment.Description = inputModel.Description;
         newAssignment.Deadline = inputModel.Deadline.HasValue ? DateOnly.FromDateTime(inputModel.Deadline.Value) : DateOnly.FromDateTime(DateTime.Now);
@@ -115,22 +438,54 @@
         newAssignment.SubjectId = inputModel.SubjectId.Id;
         newAssignment.TaskTypeId = inputModel.TaskTypeId.Id;
         newAssignment.Important = inputModel.Important;
+=======
+        if (!inputModel.Subjects.Any())
+        {
+            Snackbar.Add("Vyberte alespoň jeden předmět", Severity.Warning);
+            return;
+        }
+        if (inputModel.TaskType is null)
+        {
+            Snackbar.Add("Vyberte typ zadání", Severity.Warning);
+            return;
+        }
+
+        Submitting = true;
+        newAssignment.Name = inputModel.Name;
+        newAssignment.Description = inputModel.Description;
+        newAssignment.DeadlineFrom = inputModel.DeadlineFrom.HasValue
+            ? DateOnly.FromDateTime(inputModel.DeadlineFrom.Value)
+            : null;
+        newAssignment.DeadlineTo = inputModel.DeadlineTo.HasValue
+            ? DateOnly.FromDateTime(inputModel.DeadlineTo.Value)
+            : DateOnly.FromDateTime(DateTime.Now);
+        newAssignment.TaskTypeId = inputModel.TaskType.Id;
+        newAssignment.Priority = inputModel.Priority;
+
+        var subjectIds = inputModel.Subjects.Select(s => s.Id);
+
+>>>>>>> Stashed changes
         if (IsEdit)
         {
             newAssignment.Id = Id;
-            await TasksService.UpdateSchoolTaskAsync(newAssignment);
+            await TasksService.UpdateSchoolTaskAsync(newAssignment, subjectIds);
             Snackbar.Add("Zadání bylo úspěšně upraveno", Severity.Success);
             await Refresh.CallRequestRefresh();
             NavigationManager.NavigateTo("/");
             return;
         }
+<<<<<<< Updated upstream
         await TasksService.AddTaskAsync(newAssignment);
+=======
+
+        await TasksService.AddTaskAsync(newAssignment, subjectIds);
+>>>>>>> Stashed changes
         Snackbar.Add("Zadání bylo úspěšně přidáno", Severity.Success);
         await Refresh.CallRequestRefresh();
         NavigationManager.NavigateTo("/");
     }
 
-    private InputModel inputModel = new InputModel();
+    private InputModel inputModel = new();
 
     public class InputModel
     {
@@ -140,14 +495,14 @@
         [Required]
         public string Description { get; set; } = string.Empty;
 
-        [Required]
-        public DateTime? Deadline { get; set; }
+        public DateTime? DeadlineFrom { get; set; }
 
         [Required]
-        public Subject SubjectId { get; set; } = new();
+        public DateTime? DeadlineTo { get; set; }
 
-        [Required]
-        public TaskType TaskTypeId { get; set; } = new();
+        public IEnumerable<Subject> Subjects { get; set; } = [];
+
+        public TaskType? TaskType { get; set; }
 
         [Required]
         public bool Important { get; set; } = false;

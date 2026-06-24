@@ -1,4 +1,4 @@
-﻿using MudExRichTextEditor.Types;
+using MudExRichTextEditor.Types;
 
 namespace Tasker.Web.Data.Classes
 {
@@ -19,10 +19,7 @@ namespace Tasker.Web.Data.Classes
             yield return new QuillTool("ql-indent", "+1", 4);
             yield return new QuillTool("ql-align", "", 4, new string[4] { "", "center", "right", "justify" });
             yield return new QuillTool("ql-blockquote", "", 5);
-            //yield return new QuillTool("ql-code-block", "", 5);
             yield return new QuillTool("ql-link", "", 6);
-            //yield return new QuillTool("ql-image", "", 6);
-            //yield return new QuillTool("ql-video", "", 6);
         }
     }
 }

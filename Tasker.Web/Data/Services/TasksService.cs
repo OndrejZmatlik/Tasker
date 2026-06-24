@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ValueGeneration.Internal;
 using Tasker.Web.Data.Entities;
 
 namespace Tasker.Web.Data.Services
@@ -17,53 +15,60 @@ namespace Tasker.Web.Data.Services
         public async Task<IEnumerable<SchoolTask>> GetSchoolTasksAsync()
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            return await dbContext.Tasks.Where(x => x.Deadline.ToDateTime(TimeOnly.MinValue) >= DateTime.Now.Date && !x.Deleted)
-                                        .Include(x => x.TaskType)
-                                        .Include(x => x.Subject)
-                                        .ThenInclude(x => x.Group)
-                                        .OrderBy(x => x.Deadline)
-                                        .ToListAsync();
+            return await dbContext.Tasks
+                .Where(x => x.DeadlineTo.ToDateTime(TimeOnly.MinValue) >= DateTime.Now.Date && !x.Deleted)
+                .Include(x => x.TaskType)
+                .Include(x => x.Subjects).ThenInclude(s => s.Group)
+                .OrderBy(x => x.DeadlineTo)
+                .ToListAsync();
         }
 
-        public async Task<IEnumerable<SchoolTask>> GetSchoolTasksAsync(DateOnly DateFilter)
+        public async Task<IEnumerable<SchoolTask>> GetSchoolTasksAsync(DateOnly dateFilter)
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            return await dbContext.Tasks.Where(x => x.Deadline == DateFilter && !x.Deleted)
-                                        .Include(x => x.TaskType)
-                                        .Include(x => x.Subject)
-                                        .ThenInclude(x => x.Group)
-                                        .OrderBy(x => x.Deadline)
-                                        .ToListAsync();
+            return await dbContext.Tasks
+                .Where(x => !x.Deleted && (
+                    x.DeadlineFrom == null
+                        ? x.DeadlineTo == dateFilter
+                        : x.DeadlineFrom <= dateFilter && x.DeadlineTo >= dateFilter))
+                .Include(x => x.TaskType)
+                .Include(x => x.Subjects).ThenInclude(s => s.Group)
+                .OrderBy(x => x.DeadlineTo)
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<SchoolTask>> GetAllSchoolTasksAsync()
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            return await dbContext.Tasks.Include(x => x.TaskType)
-                                        .Include(x => x.Subject)
-                                        .ThenInclude(x => x.Group)
-                                        .OrderByDescending(x => x.Deadline)
-                                        .ToListAsync();
+            return await dbContext.Tasks
+                .Include(x => x.TaskType)
+                .Include(x => x.Subjects).ThenInclude(s => s.Group)
+                .OrderByDescending(x => x.DeadlineTo)
+                .ToListAsync();
         }
-        public async Task<SchoolTask?> GetSchoolTaskAsync(Guid Id)
+
+        public async Task<SchoolTask?> GetSchoolTaskAsync(Guid id)
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            return await dbContext.Tasks.Include(x => x.TaskType)
-                                        .Include(x => x.Subject)
-                                        .ThenInclude(x => x.Group)
-                                        .FirstOrDefaultAsync(x => x.Id == Id);
+            return await dbContext.Tasks
+                .Include(x => x.TaskType)
+                .Include(x => x.Subjects).ThenInclude(s => s.Group)
+                .FirstOrDefaultAsync(x => x.Id == id);
         }
 
         public async Task<IEnumerable<Subject>> GetSubjectsAsync()
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            return await dbContext.Subjects.Include(x => x.Group).OrderBy(x => x.ShortName).ThenBy(x => x.Group.Name).ToListAsync();
+            return await dbContext.Subjects
+                .Include(x => x.Group)
+                .OrderBy(x => x.ShortName).ThenBy(x => x.Group.Name)
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<Group>> GetGroupsAsync()
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            return await dbContext.Groups.ToListAsync();
+            return await dbContext.Groups.OrderBy(x => x.Name).ToListAsync();
         }
 
         public async Task<IEnumerable<TaskType>> GetAssignmentTypesAsync()
@@ -72,10 +77,10 @@ namespace Tasker.Web.Data.Services
             return await dbContext.TaskTypes.OrderBy(x => x.Name).ToListAsync();
         }
 
-        public async Task DeleteGroupAsync(Guid Id)
+        public async Task DeleteGroupAsync(Guid id)
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            var result = await dbContext.Groups.FindAsync(Id);
+            var result = await dbContext.Groups.FindAsync(id);
             if (result is not null)
             {
                 dbContext.Groups.Remove(result);
@@ -83,10 +88,10 @@ namespace Tasker.Web.Data.Services
             }
         }
 
-        public async Task DeleteAssignmentTypeAsync(Guid Id)
+        public async Task DeleteAssignmentTypeAsync(Guid id)
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            var result = await dbContext.TaskTypes.FindAsync(Id);
+            var result = await dbContext.TaskTypes.FindAsync(id);
             if (result is not null)
             {
                 dbContext.TaskTypes.Remove(result);
@@ -94,10 +99,10 @@ namespace Tasker.Web.Data.Services
             }
         }
 
-        public async Task DeleteSubjectAsync(Guid Id)
+        public async Task DeleteSubjectAsync(Guid id)
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            var result = await dbContext.Subjects.FindAsync(Id);
+            var result = await dbContext.Subjects.FindAsync(id);
             if (result is not null)
             {
                 dbContext.Subjects.Remove(result);
@@ -105,24 +110,24 @@ namespace Tasker.Web.Data.Services
             }
         }
 
-        public async Task AddSubjectAsync()
+        public async Task AddSubjectAsync(string shortName, string fullName, Guid groupId = default)
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            await dbContext.Subjects.AddAsync(new Subject { ShortName = "Z - New Subject" });
+            await dbContext.Subjects.AddAsync(new Subject { ShortName = shortName, FullName = fullName, GroupId = groupId });
             await dbContext.SaveChangesAsync();
         }
 
-        public async Task AddGroupAsync()
+        public async Task AddGroupAsync(string name)
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            await dbContext.Groups.AddAsync(new Group { Name = "Z - New Group" });
+            await dbContext.Groups.AddAsync(new Group { Name = name });
             await dbContext.SaveChangesAsync();
         }
 
-        public async Task AddAssignmentTypeAsync()
+        public async Task AddAssignmentTypeAsync(string name)
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            await dbContext.TaskTypes.AddAsync(new TaskType { Name = "Z - New Task Type" });
+            await dbContext.TaskTypes.AddAsync(new TaskType { Name = name });
             await dbContext.SaveChangesAsync();
         }
 
@@ -161,17 +166,20 @@ namespace Tasker.Web.Data.Services
             }
         }
 
-        public async Task AddTaskAsync(SchoolTask task)
+        public async Task AddTaskAsync(SchoolTask task, IEnumerable<Guid> subjectIds)
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
+            task.Subjects = await dbContext.Subjects
+                .Where(s => subjectIds.Contains(s.Id))
+                .ToListAsync();
             await dbContext.Tasks.AddAsync(task);
             await dbContext.SaveChangesAsync();
         }
 
-        public async Task DeleteTaskAsync(Guid Id)
+        public async Task DeleteTaskAsync(Guid id)
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            var res = await dbContext.Tasks.FindAsync(Id);
+            var res = await dbContext.Tasks.FindAsync(id);
             if (res is not null)
             {
                 res.Deleted = true;
@@ -179,10 +187,10 @@ namespace Tasker.Web.Data.Services
             }
         }
 
-        public async Task RestoreTaskAsync(Guid Id)
+        public async Task RestoreTaskAsync(Guid id)
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            var res = await dbContext.Tasks.FindAsync(Id);
+            var res = await dbContext.Tasks.FindAsync(id);
             if (res is not null)
             {
                 res.Deleted = false;
@@ -190,10 +198,29 @@ namespace Tasker.Web.Data.Services
             }
         }
 
-        public async Task UpdateSchoolTaskAsync(SchoolTask schoolTask)
+        public async Task UpdateSchoolTaskAsync(SchoolTask schoolTask, IEnumerable<Guid> subjectIds)
         {
             using var dbContext = await dbContextFactory.CreateDbContextAsync();
-            dbContext.Tasks.Update(schoolTask);
+            var existing = await dbContext.Tasks
+                .Include(t => t.Subjects)
+                .FirstOrDefaultAsync(t => t.Id == schoolTask.Id);
+            if (existing is null) return;
+
+            existing.Name = schoolTask.Name;
+            existing.Description = schoolTask.Description;
+            existing.DeadlineFrom = schoolTask.DeadlineFrom;
+            existing.DeadlineTo = schoolTask.DeadlineTo;
+            existing.TaskTypeId = schoolTask.TaskTypeId;
+            existing.Priority = schoolTask.Priority;
+            existing.Deleted = schoolTask.Deleted;
+
+            var newSubjects = await dbContext.Subjects
+                .Where(s => subjectIds.Contains(s.Id))
+                .ToListAsync();
+            existing.Subjects.Clear();
+            foreach (var s in newSubjects)
+                existing.Subjects.Add(s);
+
             await dbContext.SaveChangesAsync();
         }
     }

@@ -5,6 +5,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <NoWarn>$(NoWarn);CS8603;CS8604;CS8601;CS8600;CS0162;BL0008;NU1902;NU1903</NoWarn>
     <UserSecretsId>aspnet-Tasker.Web-a8c7f53b-a9f9-4e15-866c-2083ed6dcc39</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>.</DockerfileContext>
@@ -32,7 +33,7 @@
     <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="10.1.5" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="10.1.5" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.1.5" />
-	  <PackageReference Include="MudExRichTextEditor" Version="2.0.2" />
+    <PackageReference Include="MudExRichTextEditor" Version="2.0.2" />
   </ItemGroup>
 
 </Project>

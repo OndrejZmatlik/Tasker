@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Tasker.Web.Data.Entities
 {
@@ -25,6 +26,9 @@ namespace Tasker.Web.Data.Entities
 
         [NotMapped]
         public string TitleShort => $"{ShortName}{(GroupId != Guid.Empty ? $" {Group.Name}" : string.Empty)}";
+
+        [JsonIgnore]
+        public ICollection<SchoolTask> Tasks { get; set; } = new List<SchoolTask>();
 
         public override bool Equals(object? obj) => obj is Subject subject && Id == subject.Id;
 

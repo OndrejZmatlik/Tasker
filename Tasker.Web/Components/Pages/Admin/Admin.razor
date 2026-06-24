@@ -1,185 +1,456 @@
-﻿@page "/Admin"
+@page "/Admin"
+@namespace Tasker.Web.Components.Pages
 @using Microsoft.AspNetCore.Authorization
 @using Tasker.Web.Data.Entities
 @using Tasker.Web.Data.Services
 @inject TasksService TasksService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
 @attribute [Authorize]
+@rendermode InteractiveServer
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <MudPaper Elevation="4" Class="p-4">
-        <MudGrid>
-            <MudItem xs="12">
-                <MudText Typo="Typo.h4" GutterBottom="true">Správa předmětů, skupin a druhů zadání</MudText>
-            </MudItem>
+<PageTitle>Správa – Tasker</PageTitle>
 
-            <!-- Tabulka Předměty s editací -->
-            <MudItem xs="12">
-                <MudText Typo="Typo.h5" GutterBottom="true">Předměty</MudText>
-                <MudTable Items="Subjects" Hover="true" Bordered="true">
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 mb-8">
+
+    <MudStack Spacing="0" Class="mb-5">
+        <MudText Typo="Typo.h4" Style="font-weight:700; letter-spacing:-0.5px;">⚙️ Správa</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">Předměty, skupiny a typy zadání</MudText>
+    </MudStack>
+
+    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true"
+             Class="rounded-lg" PanelClass="pa-0"
+             MinimumTabWidth="auto">
+
+        @* ══ PŘEDMĚTY ══ *@
+        <MudTabPanel Text="Předměty" Icon="@Icons.Material.Filled.School"
+                     BadgeData="@Subjects.Count" BadgeColor="Color.Primary">
+            <MudPaper Elevation="0" Class="pa-5">
+
+                @* Toolbar *@
+                <MudStack Row="true" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap" Spacing="2" Class="mb-4">
+                    <MudText Typo="Typo.h6" Style="font-weight:600;">Předměty</MudText>
+                    <MudSpacer />
+                    <MudTextField @bind-Value="subjectSearch"
+                                  Placeholder="Hledat předmět..."
+                                  Variant="Variant.Outlined" Margin="Margin.Dense"
+                                  Clearable="true"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  Style="max-width:220px;" />
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Add"
+                               OnClick="() => { showAddSubjectForm = true; newSubjectShortName = string.Empty; newSubjectFullName = string.Empty; newSubjectGroupId = Guid.Empty; }">
+                        Přidat předmět
+                    </MudButton>
+                </MudStack>
+
+                @* Formulář pro přidání *@
+                @if (showAddSubjectForm)
+                {
+                    <MudPaper Elevation="0" Class="pa-4 mb-4 rounded-lg"
+                              Style="border: 2px solid var(--mud-palette-primary); background: var(--mud-palette-background-grey);">
+                        <MudText Typo="Typo.subtitle1" Style="font-weight:600;" Class="mb-3">
+                            Nový předmět
+                        </MudText>
+                        <MudGrid Spacing="2">
+                            <MudItem xs="12" sm="3">
+                                <MudTextField @bind-Value="newSubjectShortName"
+                                              Label="Zkratka"
+                                              Placeholder="MAT"
+                                              Variant="Variant.Outlined" Margin="Margin.Dense"
+                                              Required="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="5">
+                                <MudTextField @bind-Value="newSubjectFullName"
+                                              Label="Celý název"
+                                              Placeholder="Matematika"
+                                              Variant="Variant.Outlined" Margin="Margin.Dense"
+                                              Required="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="4">
+                                <MudSelect T="Guid" @bind-Value="newSubjectGroupId"
+                                           Label="Skupina" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                    <MudSelectItem T="Guid" Value="@Guid.Empty">— bez skupiny —</MudSelectItem>
+                                    @foreach (var g in Groups)
+                                    {
+                                        <MudSelectItem T="Guid" Value="@g.Id">@g.Name</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+                        </MudGrid>
+                        <MudStack Row="true" Spacing="2" Class="mt-3">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Save"
+                                       OnClick="SaveNewSubject">
+                                Přidat
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Default"
+                                       OnClick="() => showAddSubjectForm = false">
+                                Zrušit
+                            </MudButton>
+                        </MudStack>
+                    </MudPaper>
+                }
+
+                @* Tabulka *@
+                <MudTable Items="@FilteredSubjects" Hover="true" Dense="false" Elevation="0"
+                          Class="rounded-lg" style="border:1px solid var(--mud-palette-lines-default);">
                     <HeaderContent>
-                        <MudTh>Předmět</MudTh>
-                        <MudTh>Celé jméno</MudTh>
-                        <MudTh>Skupina</MudTh>
-                        <MudTh>Akce</MudTh>
+                        <MudTh Style="width:120px; font-weight:600;">Zkratka</MudTh>
+                        <MudTh Style="font-weight:600;">Celý název</MudTh>
+                        <MudTh Style="width:220px; font-weight:600;">Skupina</MudTh>
+                        <MudTh Style="width:120px; text-align:center; font-weight:600;">Akce</MudTh>
                     </HeaderContent>
                     <RowTemplate>
-                        <MudTd DataLabel="Předmět">
-                            <MudTextField @bind-Value="context.ShortName" Immediate="true" Variant="Variant.Outlined" />
+                        <MudTd DataLabel="Zkratka">
+                            <MudTextField @bind-Value="context.ShortName" Immediate="true"
+                                          Variant="Variant.Outlined" Margin="Margin.Dense" />
                         </MudTd>
-                        <MudTd DataLabel="Předmět (Full)">
-                            <MudTextField @bind-Value="context.FullName" Immediate="true" Variant="Variant.Outlined" />
+                        <MudTd DataLabel="Celý název">
+                            <MudTextField @bind-Value="context.FullName" Immediate="true"
+                                          Variant="Variant.Outlined" Margin="Margin.Dense" />
                         </MudTd>
                         <MudTd DataLabel="Skupina">
-                            <MudSelect T="Guid" Label="Skupina" Variant="Variant.Outlined" @bind-Value="context.GroupId" OnValueChanged="async id => await OnGroupChanged(id, context.Id)">
-                                @foreach (var group in Groups)
+                            <MudSelect T="Guid" @bind-Value="context.GroupId"
+                                       Variant="Variant.Outlined" Margin="Margin.Dense">
+                                <MudSelectItem T="Guid" Value="@Guid.Empty">— bez skupiny —</MudSelectItem>
+                                @foreach (var g in Groups)
                                 {
-                                    <MudSelectItem Value="@group.Id">@group.Name</MudSelectItem>
+                                    <MudSelectItem T="Guid" Value="@g.Id">@g.Name</MudSelectItem>
                                 }
                             </MudSelect>
                         </MudTd>
-                        <MudTd DataLabel="Akce">
-                            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="() => SaveSubject(context)">
-                                <MudIcon Icon="@Icons.Material.Filled.Save" /> Uložit
-                            </MudButton>
-                            <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="() => DeleteSubject(context.Id)">
-                                <MudIcon Icon="@Icons.Material.Filled.Delete" /> Smazat
-                            </MudButton>
+                        <MudTd Style="text-align:center;">
+                            <MudStack Row="true" Spacing="1" Justify="Justify.Center">
+                                <MudTooltip Text="Uložit">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Save"
+                                                   Color="Color.Success" Size="Size.Small"
+                                                   Variant="Variant.Filled"
+                                                   OnClick="() => SaveSubject(context)" />
+                                </MudTooltip>
+                                <MudTooltip Text="Smazat">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                   Color="Color.Error" Size="Size.Small"
+                                                   Variant="Variant.Filled"
+                                                   OnClick="() => ConfirmDeleteSubject(context)" />
+                                </MudTooltip>
+                            </MudStack>
                         </MudTd>
                     </RowTemplate>
+                    <NoRecordsContent>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="pa-6 d-block text-center">
+                            Žádné předměty k zobrazení.
+                        </MudText>
+                    </NoRecordsContent>
                 </MudTable>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddSubject">
-                    <MudIcon Icon="@Icons.Material.Filled.Add" /> Přidat předmět
-                </MudButton>
-            </MudItem>
 
-            <!-- Tabulka Skupiny s editací -->
-            <MudItem xs="12">
-                <MudText Typo="Typo.h5" GutterBottom="true">Skupiny</MudText>
-                <MudTable Items="Groups" Hover="true" Bordered="true">
+            </MudPaper>
+        </MudTabPanel>
+
+        @* ══ SKUPINY ══ *@
+        <MudTabPanel Text="Skupiny" Icon="@Icons.Material.Filled.Group"
+                     BadgeData="@Groups.Count" BadgeColor="Color.Secondary">
+            <MudPaper Elevation="0" Class="pa-5">
+
+                <MudStack Row="true" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap" Spacing="2" Class="mb-4">
+                    <MudText Typo="Typo.h6" Style="font-weight:600;">Skupiny</MudText>
+                    <MudSpacer />
+                    <MudButton Variant="Variant.Filled" Color="Color.Secondary"
+                               StartIcon="@Icons.Material.Filled.Add"
+                               OnClick="() => { showAddGroupForm = true; newGroupName = string.Empty; }">
+                        Přidat skupinu
+                    </MudButton>
+                </MudStack>
+
+                @if (showAddGroupForm)
+                {
+                    <MudPaper Elevation="0" Class="pa-4 mb-4 rounded-lg"
+                              Style="border: 2px solid var(--mud-palette-secondary); background: var(--mud-palette-background-grey);">
+                        <MudText Typo="Typo.subtitle1" Style="font-weight:600;" Class="mb-3">
+                            Nová skupina
+                        </MudText>
+                        <MudGrid Spacing="2">
+                            <MudItem xs="12" sm="8">
+                                <MudTextField @bind-Value="newGroupName"
+                                              Label="Název skupiny"
+                                              Placeholder="3.A"
+                                              Variant="Variant.Outlined" Margin="Margin.Dense"
+                                              Required="true" />
+                            </MudItem>
+                        </MudGrid>
+                        <MudStack Row="true" Spacing="2" Class="mt-3">
+                            <MudButton Variant="Variant.Filled" Color="Color.Secondary"
+                                       StartIcon="@Icons.Material.Filled.Save"
+                                       OnClick="SaveNewGroup">
+                                Přidat
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Default"
+                                       OnClick="() => showAddGroupForm = false">
+                                Zrušit
+                            </MudButton>
+                        </MudStack>
+                    </MudPaper>
+                }
+
+                <MudTable Items="@Groups" Hover="true" Dense="false" Elevation="0"
+                          Class="rounded-lg" style="border:1px solid var(--mud-palette-lines-default);">
                     <HeaderContent>
-                        <MudTh>Skupina</MudTh>
-                        <MudTh>Akce</MudTh>
+                        <MudTh Style="font-weight:600;">Název skupiny</MudTh>
+                        <MudTh Style="width:120px; text-align:center; font-weight:600;">Akce</MudTh>
                     </HeaderContent>
                     <RowTemplate>
-                        <MudTd DataLabel="Skupina">
-                            <MudTextField @bind-Value="context.Name" Immediate="true" Variant="Variant.Outlined" />
+                        <MudTd DataLabel="Název skupiny">
+                            <MudTextField @bind-Value="context.Name" Immediate="true"
+                                          Variant="Variant.Outlined" Margin="Margin.Dense" />
                         </MudTd>
-                        <MudTd DataLabel="Akce">
-                            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="() => SaveGroup(context)">
-                                <MudIcon Icon="@Icons.Material.Filled.Save" /> Uložit
-                            </MudButton>
-                            <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="() => DeleteGroup(context.Id)">
-                                <MudIcon Icon="@Icons.Material.Filled.Delete" /> Smazat
-                            </MudButton>
+                        <MudTd Style="text-align:center;">
+                            <MudStack Row="true" Spacing="1" Justify="Justify.Center">
+                                <MudTooltip Text="Uložit">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Save"
+                                                   Color="Color.Success" Size="Size.Small"
+                                                   Variant="Variant.Filled"
+                                                   OnClick="() => SaveGroup(context)" />
+                                </MudTooltip>
+                                <MudTooltip Text="Smazat">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                   Color="Color.Error" Size="Size.Small"
+                                                   Variant="Variant.Filled"
+                                                   OnClick="() => ConfirmDeleteGroup(context)" />
+                                </MudTooltip>
+                            </MudStack>
                         </MudTd>
                     </RowTemplate>
+                    <NoRecordsContent>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="pa-6 d-block text-center">
+                            Žádné skupiny k zobrazení.
+                        </MudText>
+                    </NoRecordsContent>
                 </MudTable>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddGroup">
-                    <MudIcon Icon="@Icons.Material.Filled.Add" /> Přidat skupinu
-                </MudButton>
-            </MudItem>
 
-            <MudItem xs="12">
-                <MudText Typo="Typo.h5" GutterBottom="true">Druhy zadání</MudText>
-                <MudTable Items="AssignmentTypes" Hover="true" Bordered="true">
+            </MudPaper>
+        </MudTabPanel>
+
+        @* ══ TYPY ZADÁNÍ ══ *@
+        <MudTabPanel Text="Typy zadání" Icon="@Icons.Material.Filled.Label"
+                     BadgeData="@AssignmentTypes.Count" BadgeColor="Color.Info">
+            <MudPaper Elevation="0" Class="pa-5">
+
+                <MudStack Row="true" AlignItems="AlignItems.Center" Wrap="Wrap.Wrap" Spacing="2" Class="mb-4">
+                    <MudText Typo="Typo.h6" Style="font-weight:600;">Typy zadání</MudText>
+                    <MudSpacer />
+                    <MudButton Variant="Variant.Filled" Color="Color.Info"
+                               StartIcon="@Icons.Material.Filled.Add"
+                               OnClick="() => { showAddTypeForm = true; newTypeName = string.Empty; }">
+                        Přidat typ
+                    </MudButton>
+                </MudStack>
+
+                @if (showAddTypeForm)
+                {
+                    <MudPaper Elevation="0" Class="pa-4 mb-4 rounded-lg"
+                              Style="border: 2px solid var(--mud-palette-info); background: var(--mud-palette-background-grey);">
+                        <MudText Typo="Typo.subtitle1" Style="font-weight:600;" Class="mb-3">
+                            Nový typ zadání
+                        </MudText>
+                        <MudGrid Spacing="2">
+                            <MudItem xs="12" sm="8">
+                                <MudTextField @bind-Value="newTypeName"
+                                              Label="Název typu"
+                                              Placeholder="Test, Domácí úkol..."
+                                              Variant="Variant.Outlined" Margin="Margin.Dense"
+                                              Required="true" />
+                            </MudItem>
+                        </MudGrid>
+                        <MudStack Row="true" Spacing="2" Class="mt-3">
+                            <MudButton Variant="Variant.Filled" Color="Color.Info"
+                                       StartIcon="@Icons.Material.Filled.Save"
+                                       OnClick="SaveNewAssignmentType">
+                                Přidat
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Default"
+                                       OnClick="() => showAddTypeForm = false">
+                                Zrušit
+                            </MudButton>
+                        </MudStack>
+                    </MudPaper>
+                }
+
+                <MudTable Items="@AssignmentTypes" Hover="true" Dense="false" Elevation="0"
+                          Class="rounded-lg" style="border:1px solid var(--mud-palette-lines-default);">
                     <HeaderContent>
-                        <MudTh>Druh zadání</MudTh>
-                        <MudTh>Akce</MudTh>
+                        <MudTh Style="font-weight:600;">Název typu</MudTh>
+                        <MudTh Style="width:120px; text-align:center; font-weight:600;">Akce</MudTh>
                     </HeaderContent>
                     <RowTemplate>
-                        <MudTd DataLabel="Druh zadání">
-                            <MudTextField @bind-Value="context.Name" Immediate="true" Variant="Variant.Outlined" />
+                        <MudTd DataLabel="Název typu">
+                            <MudTextField @bind-Value="context.Name" Immediate="true"
+                                          Variant="Variant.Outlined" Margin="Margin.Dense" />
                         </MudTd>
-                        <MudTd DataLabel="Akce">
-                            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="() => SaveAssignmentType(context)">
-                                <MudIcon Icon="@Icons.Material.Filled.Save" /> Uložit
-                            </MudButton>
-                            <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="() => DeleteAssignmentType(context.Id)">
-                                <MudIcon Icon="@Icons.Material.Filled.Delete" /> Smazat
-                            </MudButton>
+                        <MudTd Style="text-align:center;">
+                            <MudStack Row="true" Spacing="1" Justify="Justify.Center">
+                                <MudTooltip Text="Uložit">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Save"
+                                                   Color="Color.Success" Size="Size.Small"
+                                                   Variant="Variant.Filled"
+                                                   OnClick="() => SaveAssignmentType(context)" />
+                                </MudTooltip>
+                                <MudTooltip Text="Smazat">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                   Color="Color.Error" Size="Size.Small"
+                                                   Variant="Variant.Filled"
+                                                   OnClick="() => ConfirmDeleteAssignmentType(context)" />
+                                </MudTooltip>
+                            </MudStack>
                         </MudTd>
                     </RowTemplate>
+                    <NoRecordsContent>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="pa-6 d-block text-center">
+                            Žádné typy zadání k zobrazení.
+                        </MudText>
+                    </NoRecordsContent>
                 </MudTable>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddAssignmentType">
-                    <MudIcon Icon="@Icons.Material.Filled.Add" /> Přidat druh zadání
-                </MudButton>
-            </MudItem>
-        </MudGrid>
-    </MudPaper>
+
+            </MudPaper>
+        </MudTabPanel>
+
+    </MudTabs>
 </MudContainer>
 
 @code {
-    private IEnumerable<Subject> Subjects { get; set; } = [];
-    private IEnumerable<Group> Groups { get; set; } = [];
-    private IEnumerable<TaskType> AssignmentTypes { get; set; } = [];
+    private List<Subject> Subjects { get; set; } = [];
+    private List<Group> Groups { get; set; } = [];
+    private List<TaskType> AssignmentTypes { get; set; } = [];
 
+    // ── Hledání ─────────────────────────────────────────────────────────────────
+    private string subjectSearch = string.Empty;
+
+    private IEnumerable<Subject> FilteredSubjects =>
+        string.IsNullOrWhiteSpace(subjectSearch)
+            ? Subjects
+            : Subjects.Where(s =>
+                s.ShortName.Contains(subjectSearch, StringComparison.OrdinalIgnoreCase)
+                || s.FullName.Contains(subjectSearch, StringComparison.OrdinalIgnoreCase));
+
+    // ── Stav formulářů pro přidání ───────────────────────────────────────────────
+    private bool showAddSubjectForm;
+    private string newSubjectShortName = string.Empty;
+    private string newSubjectFullName = string.Empty;
+    private Guid newSubjectGroupId = Guid.Empty;
+
+    private bool showAddGroupForm;
+    private string newGroupName = string.Empty;
+
+    private bool showAddTypeForm;
+    private string newTypeName = string.Empty;
+
+    // ── Inicializace ─────────────────────────────────────────────────────────────
     protected override async Task OnInitializedAsync()
     {
-        Subjects = await TasksService.GetSubjectsAsync();
-        Groups = await TasksService.GetGroupsAsync();
-        AssignmentTypes = await TasksService.GetAssignmentTypesAsync();
+        Subjects = (await TasksService.GetSubjectsAsync()).ToList();
+        Groups = (await TasksService.GetGroupsAsync()).ToList();
+        AssignmentTypes = (await TasksService.GetAssignmentTypesAsync()).ToList();
     }
 
-    private async Task AddSubject()
+    // ── Předměty ─────────────────────────────────────────────────────────────────
+    private async Task SaveNewSubject()
     {
-        await TasksService.AddSubjectAsync();
-        Subjects = await TasksService.GetSubjectsAsync();
+        if (string.IsNullOrWhiteSpace(newSubjectShortName) || string.IsNullOrWhiteSpace(newSubjectFullName))
+        {
+            Snackbar.Add("Vyplnte zkratku i cely nazev predmetu.", Severity.Warning);
+            return;
+        }
+        await TasksService.AddSubjectAsync(newSubjectShortName.Trim(), newSubjectFullName.Trim(), newSubjectGroupId);
+        Subjects = (await TasksService.GetSubjectsAsync()).ToList();
+        showAddSubjectForm = false;
+        Snackbar.Add("Predmet byl pridan.", Severity.Success);
     }
 
     private async Task SaveSubject(Subject subject)
     {
         await TasksService.UpdateSubjectAsync(subject);
-        Subjects = await TasksService.GetSubjectsAsync();
+        Subjects = (await TasksService.GetSubjectsAsync()).ToList();
+        Snackbar.Add("Predmet byl ulozen.", Severity.Success);
     }
 
-    private async Task DeleteSubject(Guid id)
+    private async Task ConfirmDeleteSubject(Subject subject)
     {
-        await TasksService.DeleteSubjectAsync(id);
-        Subjects = await TasksService.GetSubjectsAsync();
+        bool? result = await DialogService.ShowMessageBox(
+            "Smazat predmet",
+            "Opravdu chcete smazat tento predmet? Akce je nevratna.",
+            yesText: "Smazat",
+            cancelText: "Zrusit");
+        if (result is not true) return;
+        await TasksService.DeleteSubjectAsync(subject.Id);
+        Subjects = (await TasksService.GetSubjectsAsync()).ToList();
+        Snackbar.Add("Predmet byl smazan.", Severity.Warning);
     }
 
-    private async Task AddGroup()
+    // ── Skupiny ──────────────────────────────────────────────────────────────────
+    private async Task SaveNewGroup()
     {
-        await TasksService.AddGroupAsync();
-        Groups = await TasksService.GetGroupsAsync();
+        if (string.IsNullOrWhiteSpace(newGroupName))
+        {
+            Snackbar.Add("Vyplnte nazev skupiny.", Severity.Warning);
+            return;
+        }
+        await TasksService.AddGroupAsync(newGroupName.Trim());
+        Groups = (await TasksService.GetGroupsAsync()).ToList();
+        showAddGroupForm = false;
+        Snackbar.Add("Skupina byla pridana.", Severity.Success);
     }
 
     private async Task SaveGroup(Group group)
     {
         await TasksService.UpdateGroupAsync(group);
-        Groups = await TasksService.GetGroupsAsync();
+        Groups = (await TasksService.GetGroupsAsync()).ToList();
+        Snackbar.Add("Skupina byla ulozena.", Severity.Success);
     }
 
-    private async Task DeleteGroup(Guid id)
+    private async Task ConfirmDeleteGroup(Group group)
     {
-        await TasksService.DeleteGroupAsync(id);
-        Groups = await TasksService.GetGroupsAsync();
+        bool? result = await DialogService.ShowMessageBox(
+            "Smazat skupinu",
+            "Opravdu chcete smazat tuto skupinu?",
+            yesText: "Smazat",
+            cancelText: "Zrusit");
+        if (result is not true) return;
+        await TasksService.DeleteGroupAsync(group.Id);
+        Groups = (await TasksService.GetGroupsAsync()).ToList();
+        Snackbar.Add("Skupina byla smazana.", Severity.Warning);
     }
 
-    private async Task AddAssignmentType()
+    // ── Typy zadání ──────────────────────────────────────────────────────────────
+    private async Task SaveNewAssignmentType()
     {
-        await TasksService.AddAssignmentTypeAsync();
-        AssignmentTypes = await TasksService.GetAssignmentTypesAsync();
+        if (string.IsNullOrWhiteSpace(newTypeName))
+        {
+            Snackbar.Add("Vyplnte nazev typu zadani.", Severity.Warning);
+            return;
+        }
+        await TasksService.AddAssignmentTypeAsync(newTypeName.Trim());
+        AssignmentTypes = (await TasksService.GetAssignmentTypesAsync()).ToList();
+        showAddTypeForm = false;
+        Snackbar.Add("Typ zadani byl pridan.", Severity.Success);
     }
 
     private async Task SaveAssignmentType(TaskType assignmentType)
     {
         await TasksService.UpdateAssignmentTypeAsync(assignmentType);
-        AssignmentTypes = await TasksService.GetAssignmentTypesAsync();
+        AssignmentTypes = (await TasksService.GetAssignmentTypesAsync()).ToList();
+        Snackbar.Add("Typ zadani byl ulozen.", Severity.Success);
     }
 
-    private async Task DeleteAssignmentType(Guid id)
+    private async Task ConfirmDeleteAssignmentType(TaskType assignmentType)
     {
-        await TasksService.DeleteAssignmentTypeAsync(id);
-        AssignmentTypes = await TasksService.GetAssignmentTypesAsync();
-    }
-
-    private async Task OnGroupChanged(Guid? newGroupId, Guid subjectId)
-    {
-        var subject = Subjects.First(s => s.Id == subjectId);
-        subject.GroupId = newGroupId ?? Guid.Empty;
-
-        await TasksService.UpdateSubjectAsync(subject);
-        Subjects = await TasksService.GetSubjectsAsync();
+        bool? result = await DialogService.ShowMessageBox(
+            "Smazat typ zadani",
+            "Opravdu chcete smazat tento typ zadani?",
+            yesText: "Smazat",
+            cancelText: "Zrusit");
+        if (result is not true) return;
+        await TasksService.DeleteAssignmentTypeAsync(assignmentType.Id);
+        AssignmentTypes = (await TasksService.GetAssignmentTypesAsync()).ToList();
+        Snackbar.Add("Typ zadani byl smazan.", Severity.Warning);
     }
 }

@@ -124,14 +124,33 @@ namespace Tasker.Web
 
             //app.UseStaticFiles();
             app.MapStaticAssets();
+<<<<<<< Updated upstream
             app.UseAntiforgery();
+=======
+
+            // Swagger musí být před UseAntiforgery
+            app.UseSwagger();
+            app.UseSwaggerUI(options =>
+            {
+                options.SwaggerEndpoint("/swagger/v1/swagger.json", "Tasker API v1");
+                options.RoutePrefix = "api";
+            });
+
+            app.UseAuthentication();
+            app.UseAuthorization();
+
+>>>>>>> Stashed changes
             string[] supportedCultures = ["cs-CZ"];
             var localizationOptions = new RequestLocalizationOptions()
                 .SetDefaultCulture(supportedCultures[0])
                 .AddSupportedCultures(supportedCultures)
                 .AddSupportedUICultures(supportedCultures);
             app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+<<<<<<< Updated upstream
             app.UseRequestLocalization(localizationOptions);
+=======
+            app.UseAntiforgery();
+>>>>>>> Stashed changes
             app.MapRazorComponents<App>()
                 .AddInteractiveServerRenderMode();
             app.MapControllers();
@@ -163,7 +182,7 @@ namespace Tasker.Web
                     new OidCollection { new Oid("1.3.6.1.5.5.7.3.1") },
                     false));
                 var cert = request.CreateSelfSigned(new DateTimeOffset(DateTime.UtcNow.AddDays(-1)), new DateTimeOffset(DateTime.UtcNow.AddYears(1)));
-                return new X509Certificate2(cert.Export(X509ContentType.Pfx, "heslo"), "heslo", X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet);
+                return X509CertificateLoader.LoadPkcs12(cert.Export(X509ContentType.Pfx, "heslo"), "heslo", X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet);
             }
         }
     }
