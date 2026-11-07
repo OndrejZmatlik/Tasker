@@ -120,10 +120,11 @@ namespace Tasker.Web
             else
             {
                 app.UseExceptionHandler("/Error");
+                app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
             }
 
-            //app.UseStaticFiles();
             app.MapStaticAssets();
+            app.UseStaticFiles();
 
             // Swagger musí být před UseAntiforgery
             app.UseSwagger();
@@ -133,18 +134,17 @@ namespace Tasker.Web
                 options.RoutePrefix = "api";
             });
 
-            app.UseAuthentication();
-            app.UseAuthorization();
-
-            app.UseAntiforgery();
-
             string[] supportedCultures = ["cs-CZ"];
             var localizationOptions = new RequestLocalizationOptions()
                 .SetDefaultCulture(supportedCultures[0])
                 .AddSupportedCultures(supportedCultures)
                 .AddSupportedUICultures(supportedCultures);
             app.UseRequestLocalization(localizationOptions);
-            app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+
+            app.UseAuthentication();
+            app.UseAuthorization();
+
+            app.UseAntiforgery();
 
             app.MapRazorComponents<App>()
                 .AddInteractiveServerRenderMode();
