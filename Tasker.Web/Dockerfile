@@ -15,7 +15,6 @@ RUN dotnet publish Tasker.Web.csproj \
     -c $BUILD_CONFIGURATION \
     -o /app/publish \
     -r linux-musl-arm64 \
-    --no-restore \
     /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS final

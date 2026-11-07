@@ -1,0 +1,51 @@
+networks:
+  tasker_network:
+    name: Tasker-Network
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.0.0/29
+
+services:
+  database:
+    container_name: Tasker-DB
+    image: arm64v8/postgres:17
+    restart: always
+    environment:
+      POSTGRES_DB: Tasker
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: o9CJuQtaMtZmqEZRcZy7ST1x6
+    ports:
+      - "5436:5432"
+    volumes:
+      - ./data:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    networks:
+      tasker_network:
+        ipv4_address: 192.168.0.2
+
+  taskerweb:
+    container_name: Tasker-Web
+    image: ghcr.io/ondrejzmatlik/tasker-web:latest
+    platform: linux/arm64
+    pull_policy: always
+    ports:
+      - "5005:8080"
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Server=database;Port=5432;Database=Tasker;Username=postgres;Password=o9CJuQtaMtZmqEZRcZy7ST1x6;
+      - Authentication__FarHive__Authority=https://idp.farhive.cz/realms/FarHive
+      - Authentication__FarHive__ClientId=tasker-web
+      - Authentication__FarHive__ClientSecret=hHnEZamtE6GHQBX0Oyf53vYorTgHUl86
+      - Authentication__FarHive__SignInPath=/signin-farhive
+      - Authentication__FarHive__LogOutPath=/logout-farhive
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    depends_on:
+      - database
+    networks:
+      tasker_network:
+        ipv4_address: 192.168.0.3
