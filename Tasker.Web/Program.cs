@@ -124,9 +124,6 @@ namespace Tasker.Web
 
             //app.UseStaticFiles();
             app.MapStaticAssets();
-<<<<<<< Updated upstream
-            app.UseAntiforgery();
-=======
 
             // Swagger musí být před UseAntiforgery
             app.UseSwagger();
@@ -139,30 +136,22 @@ namespace Tasker.Web
             app.UseAuthentication();
             app.UseAuthorization();
 
->>>>>>> Stashed changes
+            app.UseAntiforgery();
+
             string[] supportedCultures = ["cs-CZ"];
             var localizationOptions = new RequestLocalizationOptions()
                 .SetDefaultCulture(supportedCultures[0])
                 .AddSupportedCultures(supportedCultures)
                 .AddSupportedUICultures(supportedCultures);
-            app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-<<<<<<< Updated upstream
             app.UseRequestLocalization(localizationOptions);
-=======
-            app.UseAntiforgery();
->>>>>>> Stashed changes
+            app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+
             app.MapRazorComponents<App>()
                 .AddInteractiveServerRenderMode();
             app.MapControllers();
             // Add additional endpoints required by the Identity /Account Razor components.
             //app.MapAdditionalIdentityEndpoints();
             app.MapOpenApi();
-            app.UseSwagger();
-            app.UseSwaggerUI(options =>
-            {
-                options.SwaggerEndpoint("/swagger/v1/swagger.json", "Tasker API v1");
-                options.RoutePrefix = "api";
-            });
             app.Run();
         }
 

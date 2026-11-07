@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 @using Ganss.Xss
 @using Humanizer
 @using Microsoft.AspNetCore.Authorization
@@ -10,18 +10,32 @@
 @inject NavigationManager nav
 @inject ISnackbar snackbar
 
+<PageTitle>Tasker – Úkoly a testy</PageTitle>
+
 <MudScrollToTop>
     <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.KeyboardArrowUp" />
 </MudScrollToTop>
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <MudPaper Elevation="4" Class="p-4">
-        <MudText Typo="Typo.h4" GutterBottom="true" Align="Align.Center">Úkoly a testy</MudText>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 mb-8">
+
+    @* ── Hlavička stránky ── *@
+    <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4" Wrap="Wrap.Wrap">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4" Style="font-weight:700; letter-spacing:-0.5px;">
+                📚 Úkoly a testy
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @DateTime.Now.ToString("dddd, d. MMMM yyyy", CultureInfo.GetCultureInfo("cs-CZ"))
+            </MudText>
+        </MudStack>
+        <MudSpacer />
         <AuthorizeView>
-            <MudButton OnClick="InvokePrankAdmin">Prank</MudButton>
+            <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Warning"
+                       StartIcon="@Icons.Material.Filled.Celebration"
+                       OnClick="InvokePrankAdmin">
+                Prank
+            </MudButton>
         </AuthorizeView>
-<<<<<<< Updated upstream
-        <MudStack Row Wrap="Wrap.Wrap" AlignItems="AlignItems.Center">
-=======
     </MudStack>
 
     @* ── Statistiky ── *@
@@ -82,89 +96,104 @@
                           AdornmentIcon="@Icons.Material.Filled.Search"
                           Style="min-width:260px; flex:1;"
                           Immediate="true" />
->>>>>>> Stashed changes
             <MudSpacer />
-            <div>
-                <MudDatePicker Clearable DateChanged="Filter" Variant="Variant.Outlined" Date="DateFilter" Label="Filtr" />
-
-            </div>
-            <div>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/Add">
-                    <MudIcon Icon="@Icons.Material.Filled.Add" Class="me-2" /> Přidat zadání
+            @if (ActiveFilterCount > 0)
+            {
+                <MudBadge Content="@ActiveFilterCount" Color="Color.Primary" Overlap="true" Class="me-1">
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Default"
+                               StartIcon="@Icons.Material.Filled.FilterListOff"
+                               OnClick="ClearAllFilters"
+                               Size="Size.Medium">
+                        Zrušit filtry
+                    </MudButton>
+                </MudBadge>
+            }
+            <MudTooltip Text="@(ShowHistoryActive ? "Skrýt historii" : "Zobrazit historii")">
+                <MudButton Variant="@(ShowHistoryActive ? Variant.Filled : Variant.Outlined)"
+                           Color="Color.Info"
+                           StartIcon="@Icons.Material.Filled.History"
+                           OnClick="ShowHistory"
+                           Size="Size.Medium">
+                    Historie
                 </MudButton>
-
-            </div>
-            <MudTooltip Text="Zobrazit historii">
-                <MudIconButton Icon="@Icons.Material.Filled.History" OnClick="ShowHistory" Color="@(ShowHistoryActive? Color.Info: Color.Default)"></MudIconButton>
             </MudTooltip>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Href="/Add"
+                       Size="Size.Medium">
+                Přidat zadání
+            </MudButton>
         </MudStack>
 
-        <MudTable Loading="Loading" Items="SchoolTasks" Hover="true" Bordered="true" RowClassFunc="@((context, e) => context.Important ? "important-blink" : null)">
-            <HeaderContent>
-                <MudTh>Předmět</MudTh>
-                <MudTh>Typ</MudTh>
-                <MudTh>Nadpis</MudTh>
-                <MudTh>Zadání</MudTh>
-                <MudTh>Čas splnění</MudTh>
-                <MudTh>Akce</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="Předmět">
-                    <MudTooltip Text="@context.Subject.FullName">
-                        @(context.Subject.GroupId == Guid.Empty ? context.Subject.ShortName : context.Subject.ShortName + " " + context.Subject.Group.Name)
-                    </MudTooltip>
-                    @if ((context.Deadline.ToDateTime(TimeOnly.MinValue).Date - DateTime.Now.Date).TotalDays <= 1)
+        <MudDivider Class="mb-3" />
+
+        @* Řádek 2: pokročilé filtry *@
+        <MudGrid Spacing="2">
+            <MudItem xs="12" sm="6" md="3">
+                <MudDatePicker Clearable
+                               DateChanged="Filter"
+                               Variant="Variant.Outlined"
+                               Date="DateFilter"
+                               Label="Filtr – termín"
+                               Margin="Margin.Dense"
+                               Adornment="Adornment.Start"
+                               AdornmentIcon="@Icons.Material.Filled.CalendarToday" />
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudSelect T="Guid?"
+                           Value="SubjectFilter"
+                           ValueChanged="OnSubjectFilterChanged"
+                           Clearable="true"
+                           Variant="Variant.Outlined"
+                           Label="Filtr – předmět"
+                           Margin="Margin.Dense"
+                           Adornment="Adornment.Start"
+                           AdornmentIcon="@Icons.Material.Filled.School">
+                    @foreach (var subject in AllSubjects)
                     {
-                        bool Done = false;
-                        if ((context.Deadline == DateOnly.FromDateTime(DateTime.Now) && DateTime.Now.Hour >= 16) || context.Deadline < DateOnly.FromDateTime(DateTime.Now))
-                        {
-                            Done = true;
-                        }
-
-                        <MudTooltip Text="@(Done ? "Hotovo" : "Brzy")">
-                            <MudIcon Icon="@(Done? Icons.Material.Filled.Done : Icons.Material.Filled.Warning)"
-                                     Color="@(Done ? Color.Success : Color.Error)"
-                                     Style="margin-left: 5px; vertical-align: middle;" />
-                        </MudTooltip>
+                        <MudSelectItem T="Guid?" Value="@((Guid?)subject.Id)">
+                            @(subject.ShortName + (subject.GroupId != Guid.Empty ? " " + subject.Group?.Name : ""))
+                        </MudSelectItem>
                     }
-                </MudTd>
-                <MudTd DataLabel="Typ">
-                    <MudChip T="string" Color="Color.Primary" Variant="Variant.Filled" Label="true" Text="@context.TaskType.Name" />
-                </MudTd>
-                <MudTd DataLabel="Nadpis">
-                    @context.Name
-                </MudTd>
-                <MudTd DataLabel="Zadání">
-                    @((MarkupString)sanitizer.Sanitize(context.Description))
-
-                </MudTd>
-                <MudTd DataLabel="Čas splnění">
-                    @(context.Deadline.ToString("D", CultureInfo.GetCultureInfo("cs-CZ")))
-                    <code>
-                        <MudText Typo="Typo.caption">(@(context.Deadline.Humanize()))</MudText>
-                    </code>
-                </MudTd>
-                <MudTd DataLabel="Akce">
-                    <MudStack Row Wrap="Wrap.Wrap" Spacing="1">
-                        <MudButton Disabled="ShowHistoryActive" Variant="Variant.Outlined" Color="Color.Info" OnClick="() => EditTask(context.Id)">
-                            <MudIcon Icon="@Icons.Material.Filled.Edit" />
-                        </MudButton>
-                        <MudButton Disabled="!IsLogin || ShowHistoryActive" Variant="Variant.Outlined" Color="Color.Error" OnClick="() => RemoveTask(context.Id)">
-                            <MudIcon Icon="@Icons.Material.Filled.Delete" />
-                        </MudButton>
-                        <MudButton Disabled="!IsLogin || !context.Deleted" Variant="Variant.Outlined" Color="Color.Success" OnClick="() => RestoreTask(context.Id)">
-                            <MudIcon Icon="@Icons.Material.Filled.Restore" />
-                        </MudButton>
-                    </MudStack>
-                </MudTd>
-
-            </RowTemplate>
-        </MudTable>
-
-
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudSelect T="Guid?"
+                           Value="TaskTypeFilter"
+                           ValueChanged="OnTaskTypeFilterChanged"
+                           Clearable="true"
+                           Variant="Variant.Outlined"
+                           Label="Filtr – typ"
+                           Margin="Margin.Dense"
+                           Adornment="Adornment.Start"
+                           AdornmentIcon="@Icons.Material.Filled.Label">
+                    @foreach (var type in AllTaskTypes)
+                    {
+                        <MudSelectItem T="Guid?" Value="@((Guid?)type.Id)">@type.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudSelect T="TaskPriority?"
+                           Value="PriorityFilter"
+                           ValueChanged="OnPriorityFilterChanged"
+                           Clearable="true"
+                           Variant="Variant.Outlined"
+                           Label="Filtr – priorita"
+                           Margin="Margin.Dense"
+                           Adornment="Adornment.Start"
+                           AdornmentIcon="@Icons.Material.Filled.Flag">
+                    <MudSelectItem T="TaskPriority?" Value="@((TaskPriority?)TaskPriority.Critical)">🔴 Kritická</MudSelectItem>
+                    <MudSelectItem T="TaskPriority?" Value="@((TaskPriority?)TaskPriority.High)">🟠 Vysoká</MudSelectItem>
+                    <MudSelectItem T="TaskPriority?" Value="@((TaskPriority?)TaskPriority.Medium)">🟢 Střední</MudSelectItem>
+                    <MudSelectItem T="TaskPriority?" Value="@((TaskPriority?)TaskPriority.Low)">🔵 Nízká</MudSelectItem>
+                    <MudSelectItem T="TaskPriority?" Value="@((TaskPriority?)TaskPriority.Normal)">⚪ Normální</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+        </MudGrid>
     </MudPaper>
-<<<<<<< Updated upstream
-=======
 
     @* ── Obsah ── *@
     @if (Loading)
@@ -327,19 +356,27 @@
         </MudGrid>
     }
 
->>>>>>> Stashed changes
 </MudContainer>
 
+<style>
+    .task-card {
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+    .task-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.18) !important;
+    }
+</style>
 
 @code {
     private IEnumerable<SchoolTask> SchoolTasks { get; set; } = [];
+    private IEnumerable<Subject> AllSubjects { get; set; } = [];
+    private IEnumerable<TaskType> AllTaskTypes { get; set; } = [];
     private bool IsLogin { get; set; } = false;
     private DateTime? DateFilter { get; set; }
     private bool Loading { get; set; } = false;
     private HtmlSanitizer sanitizer = new();
 
-<<<<<<< Updated upstream
-=======
     // ── Klientské filtry ────────────────────────────────────────────────────────
     private string SearchText { get; set; } = string.Empty;
     private Guid? SubjectFilter { get; set; }
@@ -472,7 +509,6 @@
 
     // ── Lifecycle ───────────────────────────────────────────────────────────────
 
->>>>>>> Stashed changes
     private async Task InvokePrankAdmin()
     {
         await Refresh.CallPrank();
@@ -486,13 +522,12 @@
         Refresh.OnPrank += InvokePrank;
         var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
         IsLogin = authState.User.Identity?.IsAuthenticated ?? false;
+        // Načíst předměty a typy pro filtry
+        AllSubjects = await TasksService.GetSubjectsAsync();
+        AllTaskTypes = await TasksService.GetAssignmentTypesAsync();
         Loading = false;
-<<<<<<< Updated upstream
-        foreach (var item in SchoolTasks.Where(x => (x.Deadline.ToDateTime(TimeOnly.MinValue).Date - DateTime.Now.Date).TotalDays == 1))
-=======
 
         foreach (var item in SchoolTasks.Where(x => (x.DeadlineTo.ToDateTime(TimeOnly.MinValue).Date - DateTime.Now.Date).TotalDays == 1))
->>>>>>> Stashed changes
         {
             var remainingHours = (item.DeadlineTo.ToDateTime(TimeOnly.MinValue) - DateTime.Now).TotalHours;
             snackbar.Add($"Zbývá {remainingHours:F0} hodin na splnění zadání: {item.SubjectsDisplay} - {item.Name}",

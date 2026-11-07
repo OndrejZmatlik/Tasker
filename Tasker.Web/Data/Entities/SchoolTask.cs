@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Tasker.Web.Data.Entities
@@ -31,15 +31,10 @@ namespace Tasker.Web.Data.Entities
         public ICollection<Subject> Subjects { get; set; } = new List<Subject>();
 
         public bool Deleted { get; set; } = false;
-<<<<<<< Updated upstream
-        public bool Important { get; set; } = false;
-=======
-
         public TaskPriority Priority { get; set; } = TaskPriority.Normal;
 
         [NotMapped]
         public bool Important => Priority >= TaskPriority.High;
->>>>>>> Stashed changes
 
         [NotMapped]
         public string SubjectsDisplay =>

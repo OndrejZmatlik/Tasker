@@ -1,6 +1,7 @@
-﻿@page "/Add"
+@page "/Add"
 @page "/Edit/{Id:guid}"
 @using System.ComponentModel.DataAnnotations
+@using System.Globalization
 @using System.Security.Claims
 @using Tasker.Web.Data.Classes
 @using Tasker.Web.Data.Entities
@@ -13,56 +14,6 @@
 @rendermode InteractiveServer
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <MudPaper Elevation="4" Class="p-4">
-        @if (IsEdit)
-        {
-            <MudText Typo="Typo.h4" GutterBottom="true">Upravit zadání</MudText>
-
-        }
-        else
-        {
-            <MudText Typo="Typo.h4" GutterBottom="true">Přidat nové zadání</MudText>
-
-<<<<<<< Updated upstream
-        }
-        <EditForm Model="inputModel" OnValidSubmit="SubmitAssignment">
-            <DataAnnotationsValidator />
-            <ValidationSummary />
-
-            <MudTextField Variant="Variant.Outlined" @bind-Value="inputModel.Name" Label="Název zadání" Required="true" />
-            @* <MudTextField Variant="Variant.Outlined" @bind-Value="inputModel.Description" Label="Obsah zadání" Required="true" /> *@
-            @if (Loaded)
-            {
-
-                <MudExRichTextEdit @ref="@Editor"
-                                   Tools="HtmlEditor.All().ToArray()"
-                                   @bind-Value="inputModel.Description"
-                                   ReadOnly="false"
-                                   Height="444"
-                                   Class="my-2"
-                                   Placeholder="Obsah">
-                </MudExRichTextEdit>
-            }
-            <MudDatePicker Variant="Variant.Outlined" @bind-Date="inputModel.Deadline" Label="Termín" Required="true" />
-            <MudSelect Clearable Variant="Variant.Outlined" @bind-Value="inputModel.TaskTypeId" Label="Vyberte typ" Required="true">
-                @foreach (var subject in types)
-                {
-                    <MudSelectItem Value="@subject">@(subject.Name)</MudSelectItem>
-                }
-            </MudSelect>
-            <MudSelect Clearable Variant="Variant.Outlined" @bind-Value="inputModel.SubjectId" Label="Vyberte předmět" Required="true">
-                @foreach (var subject in subjects)
-                {
-                    <MudSelectItem Value="@(subject)">@($"{subject.ShortName}{(subject.GroupId != Guid.Empty ? $" {subject.Group.Name}" : string.Empty)}") - <code>@subject.FullName</code></MudSelectItem>
-                }
-            </MudSelect>
-            <MudCheckBox @bind-Value="inputModel.Important" Label="Vysoká priorita"></MudCheckBox>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" ButtonType="ButtonType.Submit">
-                <MudIcon Icon="@Icons.Material.Filled.Save" /> @(IsEdit ? "Uložit" : "Přidat")
-            </MudButton>
-        </EditForm>
-    </MudPaper>
-=======
     @* ── Hlavička ── *@
     <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-5" Wrap="Wrap.Wrap" Spacing="2">
         <MudTooltip Text="Zpět na přehled">
@@ -316,8 +267,6 @@
 
         </MudGrid>
     </EditForm>
-
->>>>>>> Stashed changes
 </MudContainer>
 
 @code {
@@ -327,10 +276,6 @@
     private Guid UserId;
     [Parameter] public Guid Id { get; set; }
     private bool IsEdit => Id != Guid.Empty;
-<<<<<<< Updated upstream
-    private MudExRichTextEdit? Editor { get; set; }
-    private bool Loaded = false;
-=======
     private bool Submitting = false;
     private bool loaded = false;
     private MudExRichTextEdit? editor;
@@ -382,7 +327,6 @@
     };
 
     // ── Lifecycle ────────────────────────────────────────────────────────────────
->>>>>>> Stashed changes
 
     protected override async Task OnInitializedAsync()
     {
@@ -399,16 +343,6 @@
                 NavigationManager.NavigateTo("/");
                 return;
             }
-<<<<<<< Updated upstream
-            // inputModel.SubjectId = task.SubjectId.ToString();
-            // inputModel.TaskTypeId = task.TaskTypeId.ToString();
-            inputModel.SubjectId = task.Subject;
-            inputModel.TaskTypeId = task.TaskType;
-            inputModel.Name = task.Name;
-            inputModel.Description = task.Description;
-            inputModel.Deadline = task.Deadline.ToDateTime(TimeOnly.MinValue);
-            inputModel.Important = task.Important;
-=======
             // Match against loaded subjects so equality (by Id) works in MudSelect
             inputModel.Subjects = subjects.Where(s => task.Subjects.Any(ts => ts.Id == s.Id)).ToList();
             inputModel.TaskType = types.FirstOrDefault(t => t.Id == task.TaskTypeId);
@@ -419,7 +353,6 @@
                 : null;
             inputModel.DeadlineTo = task.DeadlineTo.ToDateTime(TimeOnly.MinValue);
             inputModel.Priority = task.Priority;
->>>>>>> Stashed changes
         }
         var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
         if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out Guid userId))
@@ -429,16 +362,6 @@
 
     private async Task SubmitAssignment()
     {
-<<<<<<< Updated upstream
-        newAssignment.Name = inputModel.Name;
-        newAssignment.Description = inputModel.Description;
-        newAssignment.Deadline = inputModel.Deadline.HasValue ? DateOnly.FromDateTime(inputModel.Deadline.Value) : DateOnly.FromDateTime(DateTime.Now);
-        // newAssignment.SubjectId = Guid.Parse(inputModel.SubjectId);
-        // newAssignment.TaskTypeId = Guid.Parse(inputModel.TaskTypeId);
-        newAssignment.SubjectId = inputModel.SubjectId.Id;
-        newAssignment.TaskTypeId = inputModel.TaskTypeId.Id;
-        newAssignment.Important = inputModel.Important;
-=======
         if (!inputModel.Subjects.Any())
         {
             Snackbar.Add("Vyberte alespoň jeden předmět", Severity.Warning);
@@ -464,7 +387,6 @@
 
         var subjectIds = inputModel.Subjects.Select(s => s.Id);
 
->>>>>>> Stashed changes
         if (IsEdit)
         {
             newAssignment.Id = Id;
@@ -474,12 +396,8 @@
             NavigationManager.NavigateTo("/");
             return;
         }
-<<<<<<< Updated upstream
-        await TasksService.AddTaskAsync(newAssignment);
-=======
 
         await TasksService.AddTaskAsync(newAssignment, subjectIds);
->>>>>>> Stashed changes
         Snackbar.Add("Zadání bylo úspěšně přidáno", Severity.Success);
         await Refresh.CallRequestRefresh();
         NavigationManager.NavigateTo("/");
@@ -504,8 +422,6 @@
 
         public TaskType? TaskType { get; set; }
 
-        [Required]
-        public bool Important { get; set; } = false;
-
+        public TaskPriority Priority { get; set; } = TaskPriority.Normal;
     }
 }
